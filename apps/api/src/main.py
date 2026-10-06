@@ -20,11 +20,18 @@ setup_logging(debug=settings.DEBUG)
 logger = logging.getLogger("media_hub.main")
 
 
+from src.providers.registry import provider_registry
+from src.providers.mock_provider import MockMediaHubProvider
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info(f"Starting {settings.APP_NAME} v{settings.VERSION} [{settings.APP_ENV}]")
+    # Initialize default built-in providers
+    provider_registry.register(MockMediaHubProvider())
     yield
     logger.info(f"Shutting down {settings.APP_NAME}")
+
 
 
 def create_application() -> FastAPI:

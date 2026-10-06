@@ -1563,23 +1563,25 @@ A phase is complete only when:
 Gemini must maintain this section.
 
 ```text
-Current Phase: 3
-Current Step: 3.5
-Status: COMPLETE (Phase 3 Authentication and User State 100% Complete)
+Current Phase: 4
+Current Step: 4.5
+Status: COMPLETE (Phase 4 Provider Framework 100% Complete)
 
 Completed:
 - Phase 1 Foundation 100% Complete (1.1 Repo, 1.2 API Skeleton, 1.3 Web Skeleton, 1.4 DB Foundation, 1.5 Dev Environment)
 - Phase 2 Core Domain Model 100% Complete (2.1 Media, 2.2 User, 2.3 Progress, 2.4 Library, 2.5 Database Tests)
-- Phase 3 Authentication and User State:
-  - 3.1: Password hashing via bcrypt with salt, JWT token generation & signature verification in src/core/security.py
-  - 3.2: User API with /api/v1/auth/register, /api/v1/auth/login, /api/v1/auth/me, and profile update endpoints
-  - 3.3: User-specific data endpoints under /api/v1/library (watchlist, favorites) and /api/v1/library/progress (watch & reading progress)
-  - 3.4: Security hardening with get_current_user, get_current_active_user, get_current_admin_user FastAPI dependencies
-  - 3.5: Full authentication test suite in test_auth_api.py; 27/27 backend tests passing (5.13s) and frontend production build verified (0 errors)
+- Phase 3 Authentication and User State 100% Complete (3.1 Security Core, 3.2 Auth Endpoints, 3.3 User Library, 3.4 Dependencies, 3.5 Auth Tests)
+- Phase 4 Provider Framework:
+  - 4.1: Capabilities & Schemas (ProviderCapability, ProviderHealthStatus, NormalizedSearchResult, NormalizedMediaDetails, NormalizedPlaybackSource, NormalizedBookContent, ProviderInfo) in src/providers/capabilities.py & schemas.py
+  - 4.2: Provider base interfaces (BaseProvider, MetadataProviderInterface, StreamingProviderInterface, BookProviderInterface) in src/providers/base.py
+  - 4.3: Thread-safe ProviderRegistry manager (register, unregister, get, list_all, get_by_capability, check_all_health) in src/providers/registry.py
+  - 4.4: Reference MockMediaHubProvider supplying movies, series, anime, books, and authorized demo streams in src/providers/mock_provider.py
+  - 4.5: Provider REST API endpoints (GET /api/v1/providers, GET /api/v1/providers/{id}, GET /api/v1/providers/health, POST /api/v1/providers/{id}/toggle, POST /api/v1/providers/{id}/configure) and tests; 33/33 backend tests passing, frontend production build verified (0 errors)
 
 Next:
-- PHASE 4 — Provider Framework
-  - Step 4.1: Provider interfaces (Abstract base classes: MetadataProvider, StreamingProvider, SubtitleProvider, BookProvider, SearchProvider)
+- PHASE 5 — Metadata System
+  - Step 5.1: Metadata service layer (query active providers, merge results, normalize)
+
 ```
 
 After each completed step, update:
