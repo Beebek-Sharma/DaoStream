@@ -1563,24 +1563,26 @@ A phase is complete only when:
 Gemini must maintain this section.
 
 ```text
-Current Phase: 4
-Current Step: 4.5
-Status: COMPLETE (Phase 4 Provider Framework 100% Complete)
+Current Phase: 5
+Current Step: 5.6
+Status: COMPLETE (Phase 5 Metadata System 100% Complete)
 
 Completed:
 - Phase 1 Foundation 100% Complete (1.1 Repo, 1.2 API Skeleton, 1.3 Web Skeleton, 1.4 DB Foundation, 1.5 Dev Environment)
 - Phase 2 Core Domain Model 100% Complete (2.1 Media, 2.2 User, 2.3 Progress, 2.4 Library, 2.5 Database Tests)
 - Phase 3 Authentication and User State 100% Complete (3.1 Security Core, 3.2 Auth Endpoints, 3.3 User Library, 3.4 Dependencies, 3.5 Auth Tests)
-- Phase 4 Provider Framework:
-  - 4.1: Capabilities & Schemas (ProviderCapability, ProviderHealthStatus, NormalizedSearchResult, NormalizedMediaDetails, NormalizedPlaybackSource, NormalizedBookContent, ProviderInfo) in src/providers/capabilities.py & schemas.py
-  - 4.2: Provider base interfaces (BaseProvider, MetadataProviderInterface, StreamingProviderInterface, BookProviderInterface) in src/providers/base.py
-  - 4.3: Thread-safe ProviderRegistry manager (register, unregister, get, list_all, get_by_capability, check_all_health) in src/providers/registry.py
-  - 4.4: Reference MockMediaHubProvider supplying movies, series, anime, books, and authorized demo streams in src/providers/mock_provider.py
-  - 4.5: Provider REST API endpoints (GET /api/v1/providers, GET /api/v1/providers/{id}, GET /api/v1/providers/health, POST /api/v1/providers/{id}/toggle, POST /api/v1/providers/{id}/configure) and tests; 33/33 backend tests passing, frontend production build verified (0 errors)
+- Phase 4 Provider Framework 100% Complete (4.1 Capabilities & Schemas, 4.2 Interfaces, 4.3 Registry, 4.4 Reference Provider, 4.5 Provider APIs & Tests)
+- Phase 5 Metadata System:
+  - 5.1: Federated Search Abstraction across all enabled metadata providers with deduplication and caching
+  - 5.2: In-Memory TTL Cache in src/core/cache.py with granular invalidation
+  - 5.3: Metadata Service layer in src/services/metadata_service.py handling provider queries, local DB lookup, and canonical media DB synchronization
+  - 5.4: Media REST API endpoints (GET /api/v1/media/search, GET /api/v1/media/{id}, POST /api/v1/media/{id}/sync, GET /api/v1/media/{id}/book) in src/api/v1/endpoints/media.py
+  - 5.5: Full test suite in test_metadata_service.py; 37/37 backend tests passing, frontend production build verified (0 errors)
 
 Next:
-- PHASE 5 — Metadata System
-  - Step 5.1: Metadata service layer (query active providers, merge results, normalize)
+- PHASE 6 — External API Integration
+  - Step 6.1: First real metadata provider (TMDB / OpenLibrary / legitimate external provider adapter) with credential configuration
+
 
 ```
 
