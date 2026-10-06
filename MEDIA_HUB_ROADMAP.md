@@ -1563,9 +1563,9 @@ A phase is complete only when:
 Gemini must maintain this section.
 
 ```text
-Current Phase: 7
-Current Step: 7.6
-Status: COMPLETE (Phase 7 Source Resolution 100% Complete)
+Current Phase: 8
+Current Step: 8.6
+Status: COMPLETE (Phase 8 Video Player 100% Complete)
 
 Completed:
 - Phase 1 Foundation 100% Complete (1.1 Repo, 1.2 API Skeleton, 1.3 Web Skeleton, 1.4 DB Foundation, 1.5 Dev Environment)
@@ -1574,17 +1574,19 @@ Completed:
 - Phase 4 Provider Framework 100% Complete (4.1 Capabilities & Schemas, 4.2 Interfaces, 4.3 Registry, 4.4 Reference Provider, 4.5 Provider APIs & Tests)
 - Phase 5 Metadata System 100% Complete (5.1 Federated Search, 5.2 TTL Cache, 5.3 Metadata Service, 5.4 Media Endpoints, 5.5 Tests)
 - Phase 6 External API Integration 100% Complete (6.1 OpenLibrary, 6.2 TMDB Adapter, 6.3 Configuration UI, 6.4 Error Resilience, 6.5 Tests, 6.6 Docs)
-- Phase 7 Source Resolution:
-  - 7.1: Playback Source Abstraction & Normalized schemas with direct stream and subtitle support
-  - 7.2: SourceResolverService in src/services/resolver_service.py querying active providers
-  - 7.3: Quality and preference-based source ranking engine (4K > 1080p > 720p > 480p with user preference overrides)
-  - 7.4: Resilient provider fallback recovering automatically from downstream exceptions
-  - 7.5: URL expiration metadata and subtitle aggregation
-  - 7.6: Playback REST API endpoints (GET /api/v1/playback/resolve/{id}) and comprehensive tests in test_source_resolution.py; 45/45 backend tests passing, frontend production build verified (0 errors)
+- Phase 7 Source Resolution 100% Complete (7.1 Schemas, 7.2 Resolver Service, 7.3 Ranking, 7.4 Fallback, 7.5 Subtitles, 7.6 Playback API)
+- Phase 8 Video Player:
+  - 8.1: Modern dark cinematic VideoPlayer component in apps/web/src/components/player/VideoPlayer.tsx
+  - 8.2: Full custom playback controls (play/pause, seek scrubber, volume/mute, speed selection, fullscreen) with keyboard shortcuts (Space, K, F, M, Arrow Keys)
+  - 8.3: Integrated subtitle track switcher and overlay rendering
+  - 8.4: Dynamic quality switching (4K, 1080p, 720p) maintaining playback timestamps
+  - 8.5: Automatic watch progress synchronization to backend /api/v1/library/progress/watch
+  - 8.6: Interactive Movies page integration with one-click instant playback; 45/45 backend tests passing, frontend production build verified (0 errors)
 
 Next:
-- PHASE 8 — Video Player
-  - Step 8.1: Custom cinematic video player UI component with custom controls, shortcuts, and HLS/MP4 playback
+- PHASE 9 — Series / Anime / Drama Experience
+  - Step 9.1: Multi-season & episode navigation, episode selector drawer, and continue watching workflow
+
 
 
 

@@ -134,3 +134,66 @@ export async function syncMedia(mediaId: string): Promise<any> {
   if (!res.ok) throw new Error('Failed to sync media');
   return res.json();
 }
+
+// Playback API
+export interface ResolvedPlayback {
+  media_id: string;
+  media_type: string;
+  season_number?: number;
+  episode_number?: number;
+  primary_source?: PlaybackSource;
+  sources: PlaybackSource[];
+  available_qualities: string[];
+  subtitles: Array<{ id: string; language: string; label: string; url: string; format: string }>;
+  expires_in_seconds: number;
+}
+
+export async function resolvePlayback(
+  mediaId: string,
+  mediaType = 'movie',
+  seasonNumber?: number,
+  episodeNumber?: number,
+  preferredQuality?: string
+): Promise<ResolvedPlayback> {
+  const params = new URLSearchParams({ media_type: mediaType });
+  if (seasonNumber !== undefined) params.append('season_number', seasonNumber.toString());
+  if (episodeNumber !== undefined) params.append('episode_number', episodeNumber.toString());
+  if (preferredQuality) params.append('preferred_quality', preferredQuality);
+
+  const res = await fetch(`${API_BASE}/playback/resolve/${mediaId}?${params.toString()}`, {
+    headers: { ...authHeader() },
+  });
+  if (!res.ok) throw new Error('Could not resolve playback stream');
+  return res.json();
+}
+
+export async function updateWatchProgress(
+  mediaId: string,
+  currentTime: number,
+  duration: number,
+  completed = false,
+  episodeId?: string
+): Promise<any> {
+  const res = await fetch(`${API_BASE}/library/progress/watch`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeader() },
+    body: JSON.stringify({
+      media_id: mediaId,
+      episode_id: episodeId,
+      current_time: Math.floor(currentTime),
+      duration: Math.floor(duration),
+      completed,
+    }),
+  });
+  if (!res.ok) throw new Error('Failed to update watch progress');
+  return res.json();
+}
+
+export async function fetchWatchProgress(): Promise<any[]> {
+  const res = await fetch(`${API_BASE}/library/progress/watch`, {
+    headers: { ...authHeader() },
+  });
+  if (!res.ok) return [];
+  return res.json();
+}
+
