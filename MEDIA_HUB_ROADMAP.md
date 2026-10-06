@@ -1563,9 +1563,9 @@ A phase is complete only when:
 Gemini must maintain this section.
 
 ```text
-Current Phase: 12
-Current Step: 12.5
-Status: COMPLETE (Phase 12 Home and Discovery 100% Complete)
+Current Phase: 13
+Current Step: 13.5
+Status: COMPLETE (Phase 13 Personal Library 100% Complete)
 
 Completed:
 - Phase 1 Foundation 100% Complete (1.1 Repo, 1.2 API Skeleton, 1.3 Web Skeleton, 1.4 DB Foundation, 1.5 Dev Environment)
@@ -1579,16 +1579,21 @@ Completed:
 - Phase 9 Series / Anime / Drama Experience 100% Complete (9.1 Episodes Modal, 9.2 Playback Routing, 9.3 Next Episode, 9.4 Categorization, 9.5 Tests)
 - Phase 10 Book and Novel Reader 100% Complete (10.1 Chapter API, 10.2 Reader Component, 10.3 Typography Themes, 10.4 TOC Navigation, 10.5 Progress)
 - Phase 11 Unified Search 100% Complete (11.1 Search UI, 11.2 Category Filters, 11.3 Direct Actions, 11.4 Shortcuts, 11.5 Web Build)
-- Phase 12 Home and Discovery:
-  - 12.1: Cinematic Hero Showcase banner with high-resolution ambient backdrop, rating, and instant "Play Now" action
-  - 12.2: Continue Watching carousel driven by watch progress with percentage bars and instant resume
-  - 12.3: Continue Reading row displaying active books, current chapter bookmark, and 1-click reader launch
-  - 12.4: Categorized discovery carousels for Trending Feature Films, Popular Series & Anime, and Acclaimed Literature
-  - 12.5: Integrated seamless modal launches for VideoPlayer, SeriesDetailModal, and BookReader; frontend build verified (0 errors) and 45/45 backend tests passing
+- Phase 12 Home and Discovery 100% Complete (12.1 Hero Showcase, 12.2 Continue Watching, 12.3 Continue Reading, 12.4 Discovery Rails, 12.5 Modals Integration)
+- Phase 13 Personal Library:
+  - 13.1: Watchlist & Favorites full CRUD endpoints & UI management with 1-click play/read
+  - 13.2: Reading progress endpoints (`/reading-progress`) saving chapter index & percentage
+  - 13.3: Watch History and Reading History unified display with progress bars & resume actions
+  - 13.4: Custom user collections CRUD (`/collections`, `/collections/{id}`, `/collections/{id}/items`) with creation modal & item counters
+  - 13.5: Library filtering, sorting, tab switching, and instant removal actions; verified with 45/45 backend tests and clean frontend build
 
 Next:
-- PHASE 13 — Personal Library
-  - Step 13.1: Watchlist & Favorites management, custom user collections, and library sorting/filtering
+- PHASE 14 — Local Media Support
+  - Step 14.1: Local filesystem adapter & scanner service (`src/services/scanner_service.py`)
+  - Step 14.2: Directory scanner for configured paths (`./data/media`, `./data/books`)
+  - Step 14.3: Local filename to metadata matcher (`Movie (Year).mp4`, `Show S01E01.mkv`, `book.epub`)
+  - Step 14.4: Local streaming endpoints with Range support & path security
+  - Step 14.5: Local books indexing & reader integration
 
 
 

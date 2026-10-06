@@ -259,4 +259,87 @@ export async function fetchReadingProgress(): Promise<any[]> {
   return res.json();
 }
 
+// Watchlist API
+export async function fetchWatchlist(): Promise<any[]> {
+  const res = await fetch(`${API_BASE}/library/watchlist`, {
+    headers: { ...authHeader() },
+  });
+  if (!res.ok) return [];
+  return res.json();
+}
+
+export async function addToWatchlist(mediaId: string): Promise<any> {
+  const res = await fetch(`${API_BASE}/library/watchlist/${mediaId}`, {
+    method: 'POST',
+    headers: { ...authHeader() },
+  });
+  if (!res.ok) throw new Error('Failed to add to watchlist');
+  return res.json();
+}
+
+export async function removeFromWatchlist(mediaId: string): Promise<any> {
+  const res = await fetch(`${API_BASE}/library/watchlist/${mediaId}`, {
+    method: 'DELETE',
+    headers: { ...authHeader() },
+  });
+  if (!res.ok) throw new Error('Failed to remove from watchlist');
+  return res.json();
+}
+
+// Favorites API
+export async function fetchFavorites(): Promise<any[]> {
+  const res = await fetch(`${API_BASE}/library/favorites`, {
+    headers: { ...authHeader() },
+  });
+  if (!res.ok) return [];
+  return res.json();
+}
+
+export async function addToFavorites(mediaId: string): Promise<any> {
+  const res = await fetch(`${API_BASE}/library/favorites/${mediaId}`, {
+    method: 'POST',
+    headers: { ...authHeader() },
+  });
+  if (!res.ok) throw new Error('Failed to add to favorites');
+  return res.json();
+}
+
+export async function removeFromFavorites(mediaId: string): Promise<any> {
+  const res = await fetch(`${API_BASE}/library/favorites/${mediaId}`, {
+    method: 'DELETE',
+    headers: { ...authHeader() },
+  });
+  if (!res.ok) throw new Error('Failed to remove from favorites');
+  return res.json();
+}
+
+// Collections API
+export async function fetchCollections(): Promise<any[]> {
+  const res = await fetch(`${API_BASE}/library/collections`, {
+    headers: { ...authHeader() },
+  });
+  if (!res.ok) return [];
+  return res.json();
+}
+
+export async function createCollection(name: string, description?: string, isPublic = false): Promise<any> {
+  const res = await fetch(`${API_BASE}/library/collections`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeader() },
+    body: JSON.stringify({ name, description, is_public: isPublic }),
+  });
+  if (!res.ok) throw new Error('Failed to create collection');
+  return res.json();
+}
+
+export async function deleteCollection(collectionId: string): Promise<any> {
+  const res = await fetch(`${API_BASE}/library/collections/${collectionId}`, {
+    method: 'DELETE',
+    headers: { ...authHeader() },
+  });
+  if (!res.ok) throw new Error('Failed to delete collection');
+  return res.json();
+}
+
+
 
