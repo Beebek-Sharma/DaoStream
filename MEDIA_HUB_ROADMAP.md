@@ -1563,25 +1563,28 @@ A phase is complete only when:
 Gemini must maintain this section.
 
 ```text
-Current Phase: 5
-Current Step: 5.6
-Status: COMPLETE (Phase 5 Metadata System 100% Complete)
+Current Phase: 6
+Current Step: 6.6
+Status: COMPLETE (Phase 6 External API Integration 100% Complete)
 
 Completed:
 - Phase 1 Foundation 100% Complete (1.1 Repo, 1.2 API Skeleton, 1.3 Web Skeleton, 1.4 DB Foundation, 1.5 Dev Environment)
 - Phase 2 Core Domain Model 100% Complete (2.1 Media, 2.2 User, 2.3 Progress, 2.4 Library, 2.5 Database Tests)
 - Phase 3 Authentication and User State 100% Complete (3.1 Security Core, 3.2 Auth Endpoints, 3.3 User Library, 3.4 Dependencies, 3.5 Auth Tests)
 - Phase 4 Provider Framework 100% Complete (4.1 Capabilities & Schemas, 4.2 Interfaces, 4.3 Registry, 4.4 Reference Provider, 4.5 Provider APIs & Tests)
-- Phase 5 Metadata System:
-  - 5.1: Federated Search Abstraction across all enabled metadata providers with deduplication and caching
-  - 5.2: In-Memory TTL Cache in src/core/cache.py with granular invalidation
-  - 5.3: Metadata Service layer in src/services/metadata_service.py handling provider queries, local DB lookup, and canonical media DB synchronization
-  - 5.4: Media REST API endpoints (GET /api/v1/media/search, GET /api/v1/media/{id}, POST /api/v1/media/{id}/sync, GET /api/v1/media/{id}/book) in src/api/v1/endpoints/media.py
-  - 5.5: Full test suite in test_metadata_service.py; 37/37 backend tests passing, frontend production build verified (0 errors)
+- Phase 5 Metadata System 100% Complete (5.1 Federated Search, 5.2 TTL Cache, 5.3 Metadata Service, 5.4 Media Endpoints, 5.5 Tests)
+- Phase 6 External API Integration:
+  - 6.1: Open Library Provider (openlibrary_provider.py) for public domain books and novels with zero auth
+  - 6.2: TMDB Provider (tmdb_provider.py) for movies, TV series, anime, and Asian dramas with API key configuration and fallback
+  - 6.3: Interactive Provider Configuration & Credentials Management UI in apps/web/src/pages/SettingsPage.tsx and web API client in apps/web/src/services/api.ts
+  - 6.4: External error handling with request timeouts, HTTP error resilience, and graceful degradation
+  - 6.5: Comprehensive integration tests in test_external_providers.py; 42/42 backend tests passing, frontend production build verified (0 errors)
+  - 6.6: Provider system documentation in docs/providers.md
 
 Next:
-- PHASE 6 — External API Integration
-  - Step 6.1: First real metadata provider (TMDB / OpenLibrary / legitimate external provider adapter) with credential configuration
+- PHASE 7 — Source Resolution
+  - Step 7.1: Playback source abstraction & multi-provider resolver
+
 
 
 ```

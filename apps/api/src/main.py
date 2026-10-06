@@ -22,15 +22,20 @@ logger = logging.getLogger("media_hub.main")
 
 from src.providers.registry import provider_registry
 from src.providers.mock_provider import MockMediaHubProvider
+from src.providers.openlibrary_provider import OpenLibraryProvider
+from src.providers.tmdb_provider import TMDBProvider
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info(f"Starting {settings.APP_NAME} v{settings.VERSION} [{settings.APP_ENV}]")
-    # Initialize default built-in providers
+    # Initialize default built-in and external providers
     provider_registry.register(MockMediaHubProvider())
+    provider_registry.register(OpenLibraryProvider())
+    provider_registry.register(TMDBProvider())
     yield
     logger.info(f"Shutting down {settings.APP_NAME}")
+
 
 
 
