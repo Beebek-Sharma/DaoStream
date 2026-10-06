@@ -15,6 +15,12 @@ from .progress import (
     WatchProgress,
     ReadingProgress,
 )
+from .library import (
+    Watchlist,
+    Favorite,
+    Collection,
+    CollectionItem,
+)
 
 __all__ = [
     "Media",
@@ -28,4 +34,8 @@ __all__ = [
     "UserRole",
     "WatchProgress",
     "ReadingProgress",
+    "Watchlist",
+    "Favorite",
+    "Collection",
+    "CollectionItem",
 ]

@@ -1564,22 +1564,26 @@ Gemini must maintain this section.
 
 ```text
 Current Phase: 2
-Current Step: 2.3
-Status: COMPLETE
+Current Step: 2.5
+Status: COMPLETE (Phase 2 Core Domain Model 100% Complete)
 
 Completed:
 - Phase 1 Foundation 100% Complete (1.1 Repo, 1.2 API Skeleton, 1.3 Web Skeleton, 1.4 DB Foundation, 1.5 Dev Environment)
 - 2.1 Media models: Media, Movie, Series, Season, Episode, Book models and migration (a799ed90aa63)
 - 2.2 User model: User model with unique constraints, role support, and migration (d98998ac5637)
-- 2.3 Progress models:
-  - Created WatchProgress model (media_id, episode_id, position, duration, percentage, completed)
-  - Created ReadingProgress model (book_id, location, percentage, completed, bookmarks JSON)
-  - Configured composite unique constraints and cascade deletion relationships
-  - Generated and executed Alembic migration b3dd5465782e_create_progress_tables.py
-  - Authored test_progress_models.py verifying movie watch progress, series episode progress, book reading progress, and cascade delete; 17/17 tests passing (0.59s)
+- 2.3 Progress models: WatchProgress, ReadingProgress models, unique constraints, and migration (b3dd5465782e)
+- 2.4 Library models:
+  - Created Watchlist, Favorite, Collection, CollectionItem SQLAlchemy declarative models in apps/api/src/models/library.py
+  - Configured composite unique constraints and cascade deletion
+  - Generated and executed Alembic migration ac223d7bd6ba_create_library_tables.py
+  - Authored test_library_models.py verifying watchlist, favorites, custom collections with ordered items, and cascade delete
+- 2.5 Database tests:
+  - Authored test_domain_integration.py validating full end-to-end multi-entity domain cohesion
+  - 100% backend test suite passing (22/22 tests passing in 0.99s) and frontend production build verified (0 errors)
 
 Next:
-- Step 2.4: Library models (Watchlist, Favorites, and Collections SQLAlchemy declarative models)
+- PHASE 3 — Authentication and User State
+  - Step 3.1: Authentication (Password hashing via pwdlib/passlib/bcrypt, JWT access token generation, token validation)
 ```
 
 After each completed step, update:
