@@ -7,6 +7,7 @@ from sqlalchemy import event
 
 from src.main import app
 from src.db.base import Base
+from src.db.session import get_db
 import src.models  # Ensure all models are registered on Base.metadata
 
 TEST_DB_PATH = Path("./data/test_media_hub.db")
@@ -31,6 +32,20 @@ test_session_factory = async_sessionmaker(
     expire_on_commit=False,
     autoflush=False,
 )
+
+
+async def override_get_db():
+    async with test_session_factory() as s:
+        try:
+            yield s
+            await s.commit()
+        except Exception:
+            await s.rollback()
+            raise
+        finally:
+            await s.close()
+
+app.dependency_overrides[get_db] = override_get_db
 
 
 @pytest.fixture(scope="session")

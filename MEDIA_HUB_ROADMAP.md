@@ -1563,27 +1563,23 @@ A phase is complete only when:
 Gemini must maintain this section.
 
 ```text
-Current Phase: 2
-Current Step: 2.5
-Status: COMPLETE (Phase 2 Core Domain Model 100% Complete)
+Current Phase: 3
+Current Step: 3.5
+Status: COMPLETE (Phase 3 Authentication and User State 100% Complete)
 
 Completed:
 - Phase 1 Foundation 100% Complete (1.1 Repo, 1.2 API Skeleton, 1.3 Web Skeleton, 1.4 DB Foundation, 1.5 Dev Environment)
-- 2.1 Media models: Media, Movie, Series, Season, Episode, Book models and migration (a799ed90aa63)
-- 2.2 User model: User model with unique constraints, role support, and migration (d98998ac5637)
-- 2.3 Progress models: WatchProgress, ReadingProgress models, unique constraints, and migration (b3dd5465782e)
-- 2.4 Library models:
-  - Created Watchlist, Favorite, Collection, CollectionItem SQLAlchemy declarative models in apps/api/src/models/library.py
-  - Configured composite unique constraints and cascade deletion
-  - Generated and executed Alembic migration ac223d7bd6ba_create_library_tables.py
-  - Authored test_library_models.py verifying watchlist, favorites, custom collections with ordered items, and cascade delete
-- 2.5 Database tests:
-  - Authored test_domain_integration.py validating full end-to-end multi-entity domain cohesion
-  - 100% backend test suite passing (22/22 tests passing in 0.99s) and frontend production build verified (0 errors)
+- Phase 2 Core Domain Model 100% Complete (2.1 Media, 2.2 User, 2.3 Progress, 2.4 Library, 2.5 Database Tests)
+- Phase 3 Authentication and User State:
+  - 3.1: Password hashing via bcrypt with salt, JWT token generation & signature verification in src/core/security.py
+  - 3.2: User API with /api/v1/auth/register, /api/v1/auth/login, /api/v1/auth/me, and profile update endpoints
+  - 3.3: User-specific data endpoints under /api/v1/library (watchlist, favorites) and /api/v1/library/progress (watch & reading progress)
+  - 3.4: Security hardening with get_current_user, get_current_active_user, get_current_admin_user FastAPI dependencies
+  - 3.5: Full authentication test suite in test_auth_api.py; 27/27 backend tests passing (5.13s) and frontend production build verified (0 errors)
 
 Next:
-- PHASE 3 — Authentication and User State
-  - Step 3.1: Authentication (Password hashing via pwdlib/passlib/bcrypt, JWT access token generation, token validation)
+- PHASE 4 — Provider Framework
+  - Step 4.1: Provider interfaces (Abstract base classes: MetadataProvider, StreamingProvider, SubtitleProvider, BookProvider, SearchProvider)
 ```
 
 After each completed step, update:
