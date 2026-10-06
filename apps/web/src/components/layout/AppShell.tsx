@@ -14,7 +14,7 @@ export const AppShell: React.FC = () => {
       {/* Main Content Viewport */}
       <div className="flex-1 flex flex-col min-w-0">
         <Navbar onSearchClick={() => navigate('/search')} />
-        <main className="flex-1 p-6 lg:p-8 max-w-7xl w-full mx-auto">
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 pb-20 md:pb-8 max-w-7xl w-full mx-auto">
           <Outlet />
         </main>
       </div>

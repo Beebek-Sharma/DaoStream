@@ -31,29 +31,89 @@ const navItems: NavItem[] = [
 
 export const Sidebar: React.FC = () => {
   return (
-    <aside className="w-64 glass-panel border-r border-white/10 flex flex-col shrink-0 h-screen sticky top-0 z-40 transition-all duration-300">
-      {/* Brand Header */}
-      <div className="p-6 flex items-center gap-3 border-b border-white/5">
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-primary to-accent-cyan flex items-center justify-center shadow-glow-primary">
-          <Layers className="w-5 h-5 text-white" />
+    <>
+      {/* Desktop Persistent Sidebar */}
+      <aside
+        className="hidden md:flex w-64 glass-panel border-r border-white/10 flex-col shrink-0 h-screen sticky top-0 z-40 transition-all duration-300"
+        aria-label="Desktop Primary Navigation"
+      >
+        {/* Brand Header */}
+        <div className="p-6 flex items-center gap-3 border-b border-white/5">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-primary to-accent-cyan flex items-center justify-center shadow-glow-primary">
+            <Layers className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h1 className="font-bold text-base tracking-tight text-white flex items-center gap-1.5">
+              MediaHub
+              <span className="text-[10px] uppercase font-semibold px-1.5 py-0.5 rounded bg-primary/20 text-indigo-300 border border-primary/30">
+                Core
+              </span>
+            </h1>
+            <p className="text-xs text-gray-400">Personal Unified Media</p>
+          </div>
         </div>
-        <div>
-          <h1 className="font-bold text-base tracking-tight text-white flex items-center gap-1.5">
-            MediaHub
-            <span className="text-[10px] uppercase font-semibold px-1.5 py-0.5 rounded bg-primary/20 text-indigo-300 border border-primary/30">
-              Core
-            </span>
-          </h1>
-          <p className="text-xs text-gray-400">Personal Unified Media</p>
-        </div>
-      </div>
 
-      {/* Navigation Links */}
-      <nav className="flex-1 px-3 py-6 space-y-1.5 overflow-y-auto">
-        <div className="px-3 pb-2 text-[11px] font-semibold tracking-wider uppercase text-gray-400">
-          Discover
+        {/* Navigation Links */}
+        <nav className="flex-1 px-3 py-6 space-y-1.5 overflow-y-auto" aria-label="Main Navigation">
+          <div className="px-3 pb-2 text-[11px] font-semibold tracking-wider uppercase text-gray-400">
+            Discover
+          </div>
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <NavLink
+                key={item.path}
+                to={item.path}
+                end={item.path === '/'}
+                className={({ isActive }) =>
+                  `flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group focus-visible:ring-2 focus-visible:ring-primary ${
+                    isActive
+                      ? 'bg-primary/20 text-white border border-primary/40 shadow-glow-primary'
+                      : 'text-gray-400 hover:text-gray-100 hover:bg-white/5'
+                  }`
+                }
+              >
+                {({ isActive }) => (
+                  <>
+                    <Icon
+                      className={`w-4 h-4 transition-transform duration-200 group-hover:scale-110 ${
+                        isActive ? 'text-indigo-400' : 'text-gray-400 group-hover:text-gray-200'
+                      }`}
+                      aria-hidden="true"
+                    />
+                    <span>{item.name}</span>
+                    {isActive && (
+                      <span className="ml-auto w-1.5 h-1.5 rounded-full bg-primary shadow-glow-primary" />
+                    )}
+                  </>
+                )}
+              </NavLink>
+            );
+          })}
+        </nav>
+
+        {/* Footer Info */}
+        <div className="p-4 border-t border-white/5 text-xs text-gray-400 flex flex-col gap-1">
+          <div className="flex items-center justify-between">
+            <span>Engine</span>
+            <span className="text-gray-300 font-mono">v1.0.0</span>
+          </div>
+          <div className="flex items-center justify-between text-[11px] text-gray-400">
+            <span>Status</span>
+            <span className="text-emerald-400 flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              Operational
+            </span>
+          </div>
         </div>
-        {navItems.map((item) => {
+      </aside>
+
+      {/* Mobile Bottom Navigation Bar */}
+      <nav
+        className="md:hidden fixed bottom-0 left-0 right-0 z-40 glass-panel border-t border-white/10 flex items-center justify-around py-2 px-1 backdrop-blur-xl bg-background/95"
+        aria-label="Mobile Navigation"
+      >
+        {navItems.slice(0, 5).concat(navItems.slice(6)).map((item) => {
           const Icon = item.icon;
           return (
             <NavLink
@@ -61,42 +121,18 @@ export const Sidebar: React.FC = () => {
               to={item.path}
               end={item.path === '/'}
               className={({ isActive }) =>
-                `flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group ${
-                  isActive
-                    ? 'bg-primary/20 text-white border border-primary/40 shadow-glow-primary'
-                    : 'text-gray-400 hover:text-gray-100 hover:bg-white/5'
+                `flex flex-col items-center justify-center p-1.5 rounded-lg text-[10px] font-medium transition-colors ${
+                  isActive ? 'text-primary font-semibold' : 'text-gray-400 hover:text-gray-200'
                 }`
               }
+              aria-label={item.name}
             >
-              {({ isActive }) => (
-                <>
-                  <Icon
-                    className={`w-4 h-4 transition-transform duration-200 group-hover:scale-110 ${
-                      isActive ? 'text-indigo-400' : 'text-gray-400 group-hover:text-gray-200'
-                    }`}
-                  />
-                  <span>{item.name}</span>
-                  {isActive && (
-                    <span className="ml-auto w-1.5 h-1.5 rounded-full bg-primary shadow-glow-primary" />
-                  )}
-                </>
-              )}
+              <Icon className="w-4 h-4 mb-0.5" aria-hidden="true" />
+              <span>{item.name}</span>
             </NavLink>
           );
         })}
       </nav>
-
-      {/* Footer Info */}
-      <div className="p-4 border-t border-white/5 text-xs text-gray-400 flex flex-col gap-1">
-        <div className="flex items-center justify-between">
-          <span>Engine</span>
-          <span className="text-gray-300 font-mono">v0.1.0 (Phase 1)</span>
-        </div>
-        <div className="flex items-center justify-between text-[11px] text-gray-400">
-          <span>Mode</span>
-          <span className="text-emerald-400">Self-Hosted</span>
-        </div>
-      </div>
-    </aside>
+    </>
   );
 };
