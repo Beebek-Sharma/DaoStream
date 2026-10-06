@@ -376,5 +376,88 @@ export async function scanLocalMedia(mediaPath?: string, booksPath?: string): Pr
   return res.json();
 }
 
+// User Preferences API
+export interface UserPreferences {
+  preferred_quality: string;
+  auto_play_next: boolean;
+  default_subtitle_language: string;
+  reader_theme: string;
+  reader_font_size: number;
+  reader_font_family: string;
+  media_storage_path?: string;
+  books_storage_path?: string;
+}
+
+export async function fetchUserPreferences(): Promise<UserPreferences> {
+  const res = await fetch(`${API_BASE}/settings/preferences`, {
+    headers: { ...authHeader() },
+  });
+  if (!res.ok) throw new Error('Failed to fetch user preferences');
+  return res.json();
+}
+
+export async function updateUserPreferences(prefs: UserPreferences): Promise<UserPreferences> {
+  const res = await fetch(`${API_BASE}/settings/preferences`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...authHeader() },
+    body: JSON.stringify(prefs),
+  });
+  if (!res.ok) throw new Error('Failed to update user preferences');
+  return res.json();
+}
+
+// System Diagnostics API
+export interface SystemDiagnostics {
+  app_name: string;
+  version: string;
+  environment: string;
+  python_version: string;
+  os_system: string;
+  cache_entries: number;
+  media_counts: Record<string, number>;
+  total_users: number;
+  watch_sessions_count: number;
+  reading_sessions_count: number;
+  providers: {
+    id: string;
+    name: string;
+    is_enabled: boolean;
+    health_status: string;
+    capabilities: string[];
+  }[];
+  storage: Record<
+    string,
+    {
+      path: string;
+      exists: boolean;
+      total_gb?: number;
+      used_gb?: number;
+      free_gb?: number;
+    }
+  >;
+}
+
+export async function fetchSystemDiagnostics(): Promise<SystemDiagnostics> {
+  const res = await fetch(`${API_BASE}/settings/diagnostics`, {
+    headers: { ...authHeader() },
+  });
+  if (!res.ok) throw new Error('Failed to fetch system diagnostics');
+  return res.json();
+}
+
+export async function testProviderConnection(providerId: string): Promise<{
+  provider_id: string;
+  name: string;
+  status: string;
+  is_healthy: boolean;
+}> {
+  const res = await fetch(`${API_BASE}/settings/providers/${providerId}/test`, {
+    method: 'POST',
+    headers: { ...authHeader() },
+  });
+  if (!res.ok) throw new Error('Failed to test provider connection');
+  return res.json();
+}
+
 
 

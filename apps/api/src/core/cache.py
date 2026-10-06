@@ -39,6 +39,12 @@ class TTLCache:
             del self._store[k]
         return len(expired_keys)
 
+    def size(self) -> int:
+        return len(self._store)
+
+    def __len__(self) -> int:
+        return len(self._store)
+
 
 # Global metadata cache instance (default TTL: 10 minutes)
 metadata_cache = TTLCache(default_ttl_seconds=600)
