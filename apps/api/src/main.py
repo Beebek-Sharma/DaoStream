@@ -60,6 +60,10 @@ def create_application() -> FastAPI:
         allow_headers=["*"],
     )
 
+    # Security Headers Middleware
+    from src.core.security_hardening import SecurityHeadersMiddleware
+    app.add_middleware(SecurityHeadersMiddleware)
+
     # Exception Handlers
     app.add_exception_handler(AppError, app_error_handler)
     app.add_exception_handler(StarletteHTTPException, http_exception_handler)
