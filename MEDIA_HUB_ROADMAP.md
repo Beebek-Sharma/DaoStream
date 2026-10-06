@@ -1564,23 +1564,19 @@ Gemini must maintain this section.
 
 ```text
 Current Phase: 1
-Current Step: 1.4
-Status: COMPLETE
+Current Step: 1.5
+Status: COMPLETE (Phase 1 Project Foundation 100% Complete)
 
 Completed:
-- Confirmed provider-adapter architecture and legal boundary constraints
-- Identified architectural risks and mitigations
-- Initialized local Git repository and created foundational directories
-- Added .gitignore, .env.example, root README.md
-- Initialized FastAPI backend skeleton in apps/api/ with configuration, health check, and error handlers
-- Initialized React + TypeScript + Vite frontend in apps/web/ with cinematic dark aesthetic, routing, and live health badge
-- Configured async SQLAlchemy 2.0 with aiosqlite engine, sessionmaker, Base model, and TimestampMixin
-- Configured Alembic with async migration runner loading settings.DATABASE_URL
-- Generated initial baseline migration (d1d4c94316fd_initial_baseline.py) and applied upgrade head
-- Added automated database tests verifying engine connectivity, table creation, and session commit/refresh (5/5 tests passing)
+- 1.1: Initialized Git repository, monorepo directory hierarchy, .gitignore, .env.example, root README.md
+- 1.2: FastAPI backend skeleton with Pydantic Settings, structured logging, error envelopes, and /api/v1/health
+- 1.3: React + TypeScript + Vite frontend with Tailwind cinematic dark styling, layout AppShell, routing, and live HealthIndicator
+- 1.4: Async SQLAlchemy 2.0 with aiosqlite, Alembic migrations with baseline revision, Base model, and TimestampMixin
+- 1.5: Multi-stage Dockerfiles (Dockerfile.api, Dockerfile.web), Nginx reverse proxy configuration, root docker-compose.yml, local dev scripts, docs/development.md, and verified live API service connectivity (200 OK)
 
 Next:
-- Phase 1.5: Development environment (Docker/Compose configurations, local execution runner, documentation, and multi-service startup verification)
+- PHASE 2 — Core Domain Model
+  - Step 2.1: Media models (Media, Movie, Series, Season, Episode, Book SQLAlchemy declarative models)
 ```
 
 After each completed step, update:
