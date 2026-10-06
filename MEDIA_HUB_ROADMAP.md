@@ -1563,9 +1563,9 @@ A phase is complete only when:
 Gemini must maintain this section.
 
 ```text
-Current Phase: 10
-Current Step: 10.5
-Status: COMPLETE (Phase 10 Book and Novel Reader 100% Complete)
+Current Phase: 11
+Current Step: 11.5
+Status: COMPLETE (Phase 11 Unified Search 100% Complete)
 
 Completed:
 - Phase 1 Foundation 100% Complete (1.1 Repo, 1.2 API Skeleton, 1.3 Web Skeleton, 1.4 DB Foundation, 1.5 Dev Environment)
@@ -1577,16 +1577,18 @@ Completed:
 - Phase 7 Source Resolution 100% Complete (7.1 Schemas, 7.2 Resolver Service, 7.3 Ranking, 7.4 Fallback, 7.5 Subtitles, 7.6 Playback API)
 - Phase 8 Video Player 100% Complete (8.1 Video Player, 8.2 Controls, 8.3 Subtitles, 8.4 Quality, 8.5 Progress Sync, 8.6 Movies Integration)
 - Phase 9 Series / Anime / Drama Experience 100% Complete (9.1 Episodes Modal, 9.2 Playback Routing, 9.3 Next Episode, 9.4 Categorization, 9.5 Tests)
-- Phase 10 Book and Novel Reader:
-  - 10.1: Chapter content REST endpoint (GET /api/v1/media/{id}/book/chapter/{idx}) and metadata service chapter text retrieval
-  - 10.2: Full-screen distraction-free BookReader component in apps/web/src/components/reader/BookReader.tsx
-  - 10.3: Reader appearance preferences (Obsidian dark, Sepia warm, Porcelain light themes; font size 14-28px; Serif, Sans, Mono fonts; relaxed/loose line spacing)
-  - 10.4: Table of contents drawer, previous/next chapter navigation, keyboard shortcuts (Left/Right arrows, Esc)
-  - 10.5: Automatic reading progress synchronization with backend /api/v1/library/progress/reading, books catalog integration in BooksPage.tsx, 45/45 tests passing, and frontend build verified (0 errors)
+- Phase 10 Book and Novel Reader 100% Complete (10.1 Chapter API, 10.2 Reader Component, 10.3 Typography Themes, 10.4 TOC Navigation, 10.5 Progress)
+- Phase 11 Unified Search:
+  - 11.1: Global unified search interface in SearchPage.tsx with 280ms debouncing, query caching, and URL parameter sync
+  - 11.2: Multi-category media filter pills (All, Movies, TV Series, Anime, Books)
+  - 11.3: Direct action routing: One-click playback for movies/episodes in VideoPlayer and immediate reader launch in BookReader
+  - 11.4: Universal keyboard shortcut (Ctrl+K / Cmd+K) and Navbar search input integration
+  - 11.5: Frontend production build verified (0 errors) and 45/45 backend tests passing
 
 Next:
-- PHASE 11 — Unified Search
-  - Step 11.1: Global unified search UI with instantaneous debouncing, multi-category filters, and keyboard shortcut (Cmd+K / Ctrl+K)
+- PHASE 12 — Home and Discovery
+  - Step 12.1: Cinematic streaming-style hero banner, Continue Watching carousel, Continue Reading strip, and categorized discovery rows
+
 
 
 
