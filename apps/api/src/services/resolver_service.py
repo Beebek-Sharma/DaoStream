@@ -3,6 +3,7 @@ import logging
 from typing import List, Optional, Dict, Any
 from pydantic import BaseModel, Field
 
+from src.core.cache import TTLCache
 from src.models.media import MediaType
 from src.providers.capabilities import ProviderCapability
 from src.providers.registry import provider_registry
@@ -35,7 +36,7 @@ class SourceResolverService:
     """Central engine for discovering, ranking, and delivering authorized media playback streams."""
 
     def __init__(self) -> None:
-        pass
+        self._cache = TTLCache(default_ttl_seconds=300)
 
     def _rank_source(self, source: NormalizedPlaybackSource, preferred_quality: Optional[str] = None) -> int:
         score = QUALITY_SCORES.get(source.quality.lower(), 5)
@@ -59,6 +60,11 @@ class SourceResolverService:
         preferred_quality: Optional[str] = None,
     ) -> ResolvedPlaybackResponse:
         """Resolve and rank playable streams across active streaming providers with automatic fallback."""
+        cache_key = f"{media_id}:{media_type.value}:{season_number}:{episode_number}:{preferred_quality}"
+        cached = self._cache.get(cache_key)
+        if cached:
+            return cached
+
         providers = provider_registry.get_streaming_providers(media_type=media_type)
         if not providers:
             logger.warning(f"No active streaming providers found for type {media_type}")
@@ -117,7 +123,7 @@ class SourceResolverService:
                     seen_sub_urls.add(sub.url)
                     aggregated_subs.append(sub)
 
-        return ResolvedPlaybackResponse(
+        response = ResolvedPlaybackResponse(
             media_id=media_id,
             media_type=media_type,
             season_number=season_number,
@@ -128,6 +134,8 @@ class SourceResolverService:
             subtitles=aggregated_subs,
             expires_in_seconds=7200,
         )
+        self._cache.set(cache_key, response)
+        return response
 
 
 source_resolver_service = SourceResolverService()

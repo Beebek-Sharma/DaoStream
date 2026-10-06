@@ -1563,9 +1563,9 @@ A phase is complete only when:
 Gemini must maintain this section.
 
 ```text
-Current Phase: 15
-Current Step: 15.5
-Status: COMPLETE (Phase 15 Settings & Administration 100% Complete)
+Current Phase: 16
+Current Step: 16.4
+Status: COMPLETE (Phase 16 Performance & Optimization 100% Complete)
 
 Completed:
 - Phase 1 Foundation 100% Complete (1.1 Repo, 1.2 API Skeleton, 1.3 Web Skeleton, 1.4 DB Foundation, 1.5 Dev Environment)
@@ -1582,19 +1582,20 @@ Completed:
 - Phase 12 Home and Discovery 100% Complete (12.1 Hero Showcase, 12.2 Continue Watching, 12.3 Continue Reading, 12.4 Discovery Rails, 12.5 Modals Integration)
 - Phase 13 Personal Library 100% Complete (13.1 Watchlist & Favorites, 13.2 Reading Progress, 13.3 Watch & Read History, 13.4 Custom Collections, 13.5 UI)
 - Phase 14 Local Media Support 100% Complete (14.1 LocalMediaProvider, 14.2 Scanner, 14.3 Regex Matchers, 14.4 Range Streaming, 14.5 Local Books & Status)
-- Phase 15 Settings and Administration:
-  - 15.1: Provider management with enable/disable toggling and on-demand live connectivity ping test (`/api/v1/settings/providers/{id}/test`)
-  - 15.2: Secure API credentials management with masked key view/hide and zero-knowledge persistence
-  - 15.3: User preferences REST endpoints (`GET/PUT /api/v1/settings/preferences`) persisting preferred quality, auto-play next, subtitle language, reader theme, font size, and typography
-  - 15.4: Storage configuration status and recursive scanner trigger controls
-  - 15.5: Comprehensive system diagnostics API (`GET /api/v1/settings/diagnostics`) reporting runtime, OS, active memory cache size, disk usage metrics, and database catalog stats; 53/53 backend tests passing
+- Phase 15 Settings and Administration 100% Complete (15.1 Provider Management, 15.2 Credentials, 15.3 Preferences, 15.4 Storage, 15.5 System Diagnostics)
+- Phase 16 Performance and Optimization:
+  - 16.1: Route-level dynamic code splitting with `React.lazy` and `Suspense` for all pages; Rollup `manualChunks` isolating vendor (`react`, `react-dom`, `react-router-dom`) and `lucide-react` icons
+  - 16.2: Database foreign key indexing verified across media, progress, and library models; async connection management
+  - 16.3: Source resolution caching in `SourceResolverService` with in-memory TTL caching to eliminate redundant discovery roundtrips
+  - 16.4: Playback startup latency minimized; frontend bundle partitioned from single 309kB file into 13 optimized chunks; 53/53 backend tests passing
 
 Next:
-- PHASE 16 — Performance and Optimization
-  - Step 16.1: Frontend optimization: dynamic code splitting, lazy loading page routes, asset optimizations
-  - Step 16.2: Backend optimization: database indexing audit on foreign keys, async connection management
-  - Step 16.3: Provider optimization: concurrent requests, timeouts, TTL cache tuning
-  - Step 16.4: Playback startup latency optimization and response payload minimization
+- PHASE 17 — Security Hardening
+  - Step 17.1: Comprehensive API security review (CORS, token algorithms, request size limits)
+  - Step 17.2: Provider SSRF protection (validating provider URLs, blocking private IP ranges 127.0.0.1, 10.0.0.0/8, 192.168.0.0/16)
+  - Step 17.3: Filesystem path traversal protection audit & canonical path isolation
+  - Step 17.4: Secret handling & credential masking audit
+  - Step 17.5: Automated security verification tests
 
 
 
