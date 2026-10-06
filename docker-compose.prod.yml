@@ -1,0 +1,110 @@
+name: media-hub-prod
+
+services:
+  # ============================================================================
+  # Media Hub - FastAPI Backend Engine
+  # ============================================================================
+  api:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/Dockerfile.api
+    container_name: media-hub-api-prod
+    restart: unless-stopped
+    expose:
+      - "8000"
+    environment:
+      - APP_ENV=production
+      - DEBUG=false
+      - DATABASE_URL=${DATABASE_URL:-sqlite+aiosqlite:///./data/db/media_hub.db}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-change_this_to_a_secure_random_production_secret_key_32_bytes}
+      - MEDIA_STORAGE_PATH=/app/data/media
+      - BOOKS_STORAGE_PATH=/app/data/books
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost,http://localhost:80,https://localhost}
+    volumes:
+      - ./data/media:/app/data/media
+      - ./data/books:/app/data/books
+      - ./data/db:/app/data/db
+      - ./data/logs:/app/data/logs
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 2048M
+        reservations:
+          cpus: "0.25"
+          memory: 256M
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - media_hub_network
+
+  # ============================================================================
+  # Media Hub - React Frontend & Nginx Edge Reverse Proxy
+  # ============================================================================
+  web:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/Dockerfile.web
+    container_name: media-hub-web-prod
+    restart: unless-stopped
+    ports:
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+    depends_on:
+      api:
+        condition: service_healthy
+    volumes:
+      - ./infrastructure/docker/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./data/ssl:/etc/nginx/ssl:ro
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:80"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    networks:
+      - media_hub_network
+
+  # ============================================================================
+  # Optional Enterprise PostgreSQL Backend (activate with: --profile postgres)
+  # ============================================================================
+  postgres:
+    profiles:
+      - postgres
+    image: postgres:16-alpine
+    container_name: media-hub-postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB:-mediahub}
+      - POSTGRES_USER=${POSTGRES_USER:-mediahub_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-secure_postgres_password_replace_in_prod}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    deploy:
+      resources:
+        limits:
+          cpus: "1.5"
+          memory: 1024M
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-mediahub_user} -d ${POSTGRES_DB:-mediahub}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - media_hub_network
+
+networks:
+  media_hub_network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local
