@@ -1,10 +1,27 @@
 import pytest
 import asyncio
+from pathlib import Path
 from starlette.testclient import TestClient
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
+
 from src.main import app
 from src.db.base import Base
-from src.db.session import engine, async_session_factory
 import src.models  # Ensure all models are registered on Base.metadata
+
+TEST_DB_PATH = Path("./data/test_media_hub.db")
+
+test_engine = create_async_engine(
+    f"sqlite+aiosqlite:///{TEST_DB_PATH.as_posix()}",
+    echo=False,
+    connect_args={"check_same_thread": False},
+)
+
+test_session_factory = async_sessionmaker(
+    bind=test_engine,
+    class_=AsyncSession,
+    expire_on_commit=False,
+    autoflush=False,
+)
 
 
 @pytest.fixture(scope="session")
@@ -14,19 +31,34 @@ def client():
 
 
 @pytest.fixture(scope="session", autouse=True)
-def setup_database_schema():
-    """Ensure database schema is created via an isolated event loop before running test session."""
+def setup_test_database():
+    """Create schema in isolated test database and clean up file on completion."""
+    TEST_DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+
     async def _create():
-        async with engine.begin() as conn:
+        async with test_engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
 
     async def _drop():
-        async with engine.begin() as conn:
+        async with test_engine.begin() as conn:
             await conn.run_sync(Base.metadata.drop_all)
+        await test_engine.dispose()
+        if TEST_DB_PATH.exists():
+            try:
+                TEST_DB_PATH.unlink()
+            except Exception:
+                pass
 
     asyncio.run(_create())
     yield
     asyncio.run(_drop())
+
+
+@pytest.fixture
+async def session() -> AsyncSession:
+    """Yields an isolated async session for database testing."""
+    async with test_session_factory() as s:
+        yield s
 
 
 @pytest.fixture

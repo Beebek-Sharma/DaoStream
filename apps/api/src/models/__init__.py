@@ -7,6 +7,10 @@ from .media import (
     Episode,
     Book,
 )
+from .user import (
+    User,
+    UserRole,
+)
 
 __all__ = [
     "Media",
@@ -16,4 +20,6 @@ __all__ = [
     "Season",
     "Episode",
     "Book",
+    "User",
+    "UserRole",
 ]
