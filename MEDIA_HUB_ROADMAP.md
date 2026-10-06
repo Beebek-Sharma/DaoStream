@@ -1564,7 +1564,7 @@ Gemini must maintain this section.
 
 ```text
 Current Phase: 1
-Current Step: 1.3
+Current Step: 1.4
 Status: COMPLETE
 
 Completed:
@@ -1573,15 +1573,14 @@ Completed:
 - Initialized local Git repository and created foundational directories
 - Added .gitignore, .env.example, root README.md
 - Initialized FastAPI backend skeleton in apps/api/ with configuration, health check, and error handlers
-- Initialized React + TypeScript + Vite frontend in apps/web/
-- Configured Tailwind CSS with custom cinematic dark palette, glassmorphism, and subtle scrollbars
-- Scaffolds AppShell layout with persistent navigation sidebar and header bar
-- Implemented real-time HealthIndicator polling /api/v1/health with pulsating badge
-- Created routes and page shells for Home, Search, Movies, Series, Anime, Books, Library, and Settings
-- Verified full TypeScript compilation and Vite production build (0 errors)
+- Initialized React + TypeScript + Vite frontend in apps/web/ with cinematic dark aesthetic, routing, and live health badge
+- Configured async SQLAlchemy 2.0 with aiosqlite engine, sessionmaker, Base model, and TimestampMixin
+- Configured Alembic with async migration runner loading settings.DATABASE_URL
+- Generated initial baseline migration (d1d4c94316fd_initial_baseline.py) and applied upgrade head
+- Added automated database tests verifying engine connectivity, table creation, and session commit/refresh (5/5 tests passing)
 
 Next:
-- Phase 1.4: Database foundation (Configure SQLAlchemy async engine, SQLite support, Alembic migrations, initial baseline migration)
+- Phase 1.5: Development environment (Docker/Compose configurations, local execution runner, documentation, and multi-service startup verification)
 ```
 
 After each completed step, update:
