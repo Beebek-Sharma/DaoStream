@@ -24,7 +24,7 @@ async def test_database_engine_connection():
 async def test_session_lifecycle_and_mixins():
     """Verify creating tables, inserting entities with TimestampMixin, and querying."""
     async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+        await conn.run_sync(lambda sync_conn: SampleModel.__table__.create(sync_conn, checkfirst=True))
 
     async with async_session_factory() as session:
         item = SampleModel(name="test_item")
@@ -38,4 +38,4 @@ async def test_session_lifecycle_and_mixins():
         assert item.updated_at is not None
 
     async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
+        await conn.run_sync(lambda sync_conn: SampleModel.__table__.drop(sync_conn, checkfirst=True))

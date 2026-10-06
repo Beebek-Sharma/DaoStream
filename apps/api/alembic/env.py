@@ -17,6 +17,7 @@ if str(api_dir) not in sys.path:
 
 from src.core.config import settings
 from src.db.base import Base
+import src.models  # Ensures all models are registered on Base.metadata
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
