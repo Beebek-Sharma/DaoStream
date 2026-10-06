@@ -1,7 +1,16 @@
 import React, { useEffect, useState } from 'react';
-import { Settings, Key, Shield, HardDrive, CheckCircle2, RefreshCw, Eye, EyeOff } from 'lucide-react';
+import { Settings, Key, Shield, HardDrive, CheckCircle2, RefreshCw, Eye, EyeOff, FolderSearch } from 'lucide-react';
 import { HealthIndicator } from '../components/common/HealthIndicator';
-import { fetchProviders, toggleProvider, configureProvider, ProviderInfo } from '../services/api';
+import {
+  fetchProviders,
+  toggleProvider,
+  configureProvider,
+  ProviderInfo,
+  fetchLocalStatus,
+  scanLocalMedia,
+  LocalStorageStatus,
+  LocalScanSummary,
+} from '../services/api';
 
 export const SettingsPage: React.FC = () => {
   const [providers, setProviders] = useState<ProviderInfo[]>([]);
@@ -10,58 +19,53 @@ export const SettingsPage: React.FC = () => {
   const [apiKeyInput, setApiKeyInput] = useState<string>('');
   const [showKey, setShowKey] = useState<boolean>(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [localStatus, setLocalStatus] = useState<LocalStorageStatus | null>(null);
+  const [scanning, setScanning] = useState<boolean>(false);
+  const [scanSummary, setScanSummary] = useState<LocalScanSummary | null>(null);
 
-  const loadProviders = async () => {
+  const loadProvidersAndStorage = async () => {
     setLoading(true);
     try {
-      const list = await fetchProviders();
-      setProviders(list);
-    } catch (err) {
-      console.warn('Using local fallback providers list:', err);
-      // Fallback display if not logged in
-      setProviders([
-        {
-          id: 'mock_media_provider',
-          name: 'Sample Media Hub Provider',
-          version: '1.0.0',
-          description: 'Built-in reference provider supplying sample movies, series, anime, books, and authorized demo streams.',
-          author: 'Media Hub Team',
-          capabilities: ['search', 'metadata', 'streaming', 'books'],
-          supported_media_types: ['movie', 'series', 'anime', 'book'],
-          health_status: 'healthy',
-          is_enabled: true,
-        },
-        {
-          id: 'openlibrary_provider',
-          name: 'Open Library Provider',
-          version: '1.0.0',
-          description: 'Free, open catalog of books and novels powered by the Internet Archive Open Library API.',
-          author: 'Internet Archive',
-          capabilities: ['search', 'metadata', 'books'],
-          supported_media_types: ['book'],
-          health_status: 'healthy',
-          is_enabled: true,
-        },
-        {
-          id: 'tmdb_provider',
-          name: 'The Movie Database (TMDB)',
-          version: '1.0.0',
-          description: 'Leading community-built database for movies, television series, anime, and Asian dramas.',
-          author: 'TMDB Community',
-          capabilities: ['search', 'metadata', 'movie', 'series', 'anime'],
-          supported_media_types: ['movie', 'series', 'anime', 'drama'],
-          health_status: 'unconfigured',
-          is_enabled: true,
-        },
+      const [list, storage] = await Promise.allSettled([
+        fetchProviders(),
+        fetchLocalStatus(),
       ]);
+
+      if (list.status === 'fulfilled') {
+        setProviders(list.value);
+      }
+      if (storage.status === 'fulfilled') {
+        setLocalStatus(storage.value);
+      }
+    } catch (err) {
+      console.warn('Error loading settings data:', err);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadProviders();
+    loadProvidersAndStorage();
   }, []);
+
+  const handleScanDirectories = async () => {
+    setScanning(true);
+    setScanSummary(null);
+    try {
+      const summary = await scanLocalMedia();
+      setScanSummary(summary);
+      setStatusMessage(`Scan complete: ${summary.scanned_files} files checked.`);
+      const updatedStatus = await fetchLocalStatus();
+      setLocalStatus(updatedStatus);
+      setTimeout(() => setStatusMessage(null), 4000);
+    } catch (err) {
+      console.error(err);
+      setStatusMessage('Scan failed to complete');
+      setTimeout(() => setStatusMessage(null), 4000);
+    } finally {
+      setScanning(false);
+    }
+  };
 
   const handleToggle = async (provider: ProviderInfo) => {
     try {
@@ -82,7 +86,7 @@ export const SettingsPage: React.FC = () => {
       setStatusMessage(`Configuration saved for ${providerId}`);
       setEditingProviderId(null);
       setApiKeyInput('');
-      loadProviders();
+      loadProvidersAndStorage();
       setTimeout(() => setStatusMessage(null), 3000);
     } catch (err) {
       console.error(err);
@@ -120,7 +124,7 @@ export const SettingsPage: React.FC = () => {
             <p className="text-xs text-gray-400">Phase 4 & 6 Provider Adapter Framework</p>
           </div>
           <button
-            onClick={loadProviders}
+            onClick={loadProvidersAndStorage}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-xs text-gray-300 transition-colors"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
@@ -241,20 +245,68 @@ export const SettingsPage: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Local Storage Card */}
         <div className="rounded-2xl glass-card p-6 space-y-4">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
-              <HardDrive className="w-4 h-4" />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+                <HardDrive className="w-4 h-4" />
+              </div>
+              <div>
+                <h2 className="text-sm font-semibold text-white">Storage & Local Media</h2>
+                <p className="text-xs text-gray-400">Phase 14 Local Media Engine</p>
+              </div>
             </div>
-            <div>
-              <h2 className="text-sm font-semibold text-white">Storage & Local Media</h2>
-              <p className="text-xs text-gray-400">Phase 14 Filesystem Adapters</p>
+            {localStatus && (
+              <span className="px-2.5 py-1 rounded-full text-[11px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                {localStatus.indexed_local_media_count} Indexed Items
+              </span>
+            )}
+          </div>
+
+          <p className="text-xs text-gray-300 leading-relaxed">
+            Mount local directory paths or network NAS shares for indexed movies, series episodes, and local EPUB/PDF collections with HTTP Range seeking.
+          </p>
+
+          <div className="space-y-1.5 pt-1">
+            <div className="flex items-center justify-between text-xs p-2 rounded-lg bg-background/50 border border-white/5 font-mono text-gray-400">
+              <span className="truncate max-w-[280px]">Media: {localStatus ? localStatus.media_storage_path : './data/media'}</span>
+              <span className="text-[10px] text-emerald-400 font-sans font-semibold">Ready</span>
+            </div>
+            <div className="flex items-center justify-between text-xs p-2 rounded-lg bg-background/50 border border-white/5 font-mono text-gray-400">
+              <span className="truncate max-w-[280px]">Books: {localStatus ? localStatus.books_storage_path : './data/books'}</span>
+              <span className="text-[10px] text-emerald-400 font-sans font-semibold">Ready</span>
             </div>
           </div>
-          <p className="text-xs text-gray-300 leading-relaxed">
-            Mount local directory paths or network NAS shares for indexed movies, series episodes, and local EPUB/PDF collections.
-          </p>
-          <div className="pt-2 text-xs font-mono text-gray-400 bg-background/50 p-2.5 rounded-lg border border-white/5">
-            ./data/media &nbsp;|&nbsp; ./data/books
+
+          {scanSummary && (
+            <div className="p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-300 space-y-1">
+              <div className="font-semibold flex items-center gap-1.5">
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                <span>Filesystem Scan Completed</span>
+              </div>
+              <div className="text-[11px] text-emerald-200/80">
+                Scanned {scanSummary.scanned_files} files • Added {scanSummary.movies_added} movies, {scanSummary.episodes_added} episodes, {scanSummary.books_added} books.
+              </div>
+            </div>
+          )}
+
+          <div className="pt-1">
+            <button
+              onClick={handleScanDirectories}
+              disabled={scanning}
+              className="w-full py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium flex items-center justify-center gap-2 transition-all shadow-md shadow-emerald-950/40 disabled:opacity-50"
+            >
+              {scanning ? (
+                <>
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  <span>Scanning Media Folders...</span>
+                </>
+              ) : (
+                <>
+                  <FolderSearch className="w-3.5 h-3.5" />
+                  <span>Scan Storage Directories Now</span>
+                </>
+              )}
+            </button>
           </div>
         </div>
 

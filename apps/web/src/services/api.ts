@@ -341,5 +341,40 @@ export async function deleteCollection(collectionId: string): Promise<any> {
   return res.json();
 }
 
+// Local Storage & Scanner API
+export interface LocalStorageStatus {
+  media_storage_path: string;
+  media_storage_exists: boolean;
+  books_storage_path: string;
+  books_storage_exists: boolean;
+  indexed_local_media_count: number;
+}
+
+export interface LocalScanSummary {
+  scanned_files: number;
+  movies_added: number;
+  episodes_added: number;
+  books_added: number;
+  errors: string[];
+}
+
+export async function fetchLocalStatus(): Promise<LocalStorageStatus> {
+  const res = await fetch(`${API_BASE}/local/status`, {
+    headers: { ...authHeader() },
+  });
+  if (!res.ok) throw new Error('Failed to fetch local storage status');
+  return res.json();
+}
+
+export async function scanLocalMedia(mediaPath?: string, booksPath?: string): Promise<LocalScanSummary> {
+  const res = await fetch(`${API_BASE}/local/scan`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeader() },
+    body: JSON.stringify({ media_path: mediaPath, books_path: booksPath }),
+  });
+  if (!res.ok) throw new Error('Failed to scan local storage');
+  return res.json();
+}
+
 
 

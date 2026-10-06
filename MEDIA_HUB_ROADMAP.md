@@ -1563,9 +1563,9 @@ A phase is complete only when:
 Gemini must maintain this section.
 
 ```text
-Current Phase: 13
-Current Step: 13.5
-Status: COMPLETE (Phase 13 Personal Library 100% Complete)
+Current Phase: 14
+Current Step: 14.5
+Status: COMPLETE (Phase 14 Local Media 100% Complete)
 
 Completed:
 - Phase 1 Foundation 100% Complete (1.1 Repo, 1.2 API Skeleton, 1.3 Web Skeleton, 1.4 DB Foundation, 1.5 Dev Environment)
@@ -1580,20 +1580,21 @@ Completed:
 - Phase 10 Book and Novel Reader 100% Complete (10.1 Chapter API, 10.2 Reader Component, 10.3 Typography Themes, 10.4 TOC Navigation, 10.5 Progress)
 - Phase 11 Unified Search 100% Complete (11.1 Search UI, 11.2 Category Filters, 11.3 Direct Actions, 11.4 Shortcuts, 11.5 Web Build)
 - Phase 12 Home and Discovery 100% Complete (12.1 Hero Showcase, 12.2 Continue Watching, 12.3 Continue Reading, 12.4 Discovery Rails, 12.5 Modals Integration)
-- Phase 13 Personal Library:
-  - 13.1: Watchlist & Favorites full CRUD endpoints & UI management with 1-click play/read
-  - 13.2: Reading progress endpoints (`/reading-progress`) saving chapter index & percentage
-  - 13.3: Watch History and Reading History unified display with progress bars & resume actions
-  - 13.4: Custom user collections CRUD (`/collections`, `/collections/{id}`, `/collections/{id}/items`) with creation modal & item counters
-  - 13.5: Library filtering, sorting, tab switching, and instant removal actions; verified with 45/45 backend tests and clean frontend build
+- Phase 13 Personal Library 100% Complete (13.1 Watchlist & Favorites, 13.2 Reading Progress, 13.3 Watch & Read History, 13.4 Custom Collections, 13.5 UI)
+- Phase 14 Local Media Support:
+  - 14.1: LocalMediaProvider adapter registered in provider registry with capabilities for streaming and books
+  - 14.2: LocalScannerService with directory traversal of media and books paths
+  - 14.3: Metadata matching via regex parser for movies (`Title.Year.Quality`), series/anime (`Show S01E01 Title`), and books (`Title - Author`)
+  - 14.4: Local streaming endpoints `/api/v1/local/stream/{id}` supporting RFC 7233 HTTP Byte Range seeking, partial content (206), and path traversal security
+  - 14.5: Local books reader support `/api/v1/local/book/{id}`, status endpoint `/api/v1/local/status`, and frontend directory scanner integration in SettingsPage; 50/50 backend tests passing
 
 Next:
-- PHASE 14 — Local Media Support
-  - Step 14.1: Local filesystem adapter & scanner service (`src/services/scanner_service.py`)
-  - Step 14.2: Directory scanner for configured paths (`./data/media`, `./data/books`)
-  - Step 14.3: Local filename to metadata matcher (`Movie (Year).mp4`, `Show S01E01.mkv`, `book.epub`)
-  - Step 14.4: Local streaming endpoints with Range support & path security
-  - Step 14.5: Local books indexing & reader integration
+- PHASE 15 — Settings and Administration
+  - Step 15.1: Complete provider enable/disable persistence & active diagnostics
+  - Step 15.2: Secure API credentials management with validation test calls
+  - Step 15.3: User preferences management (preferred streaming quality, reader theme, subtitle styling)
+  - Step 15.4: Storage configuration customization & health reporting
+  - Step 15.5: System diagnostics endpoint & admin dashboard view
 
 
 

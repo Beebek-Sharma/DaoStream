@@ -24,6 +24,7 @@ from src.providers.registry import provider_registry
 from src.providers.mock_provider import MockMediaHubProvider
 from src.providers.openlibrary_provider import OpenLibraryProvider
 from src.providers.tmdb_provider import TMDBProvider
+from src.providers.local_provider import LocalMediaProvider
 
 
 @asynccontextmanager
@@ -33,6 +34,7 @@ async def lifespan(app: FastAPI):
     provider_registry.register(MockMediaHubProvider())
     provider_registry.register(OpenLibraryProvider())
     provider_registry.register(TMDBProvider())
+    provider_registry.register(LocalMediaProvider())
     yield
     logger.info(f"Shutting down {settings.APP_NAME}")
 
