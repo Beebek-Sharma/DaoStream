@@ -1,4 +1,5 @@
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
+from sqlalchemy import event
 from typing import AsyncGenerator
 import os
 from pathlib import Path
@@ -22,6 +23,13 @@ engine = create_async_engine(
     connect_args=connect_args,
     future=True,
 )
+
+if "sqlite" in settings.DATABASE_URL:
+    @event.listens_for(engine.sync_engine, "connect")
+    def set_sqlite_pragma(dbapi_connection, connection_record):
+        cursor = dbapi_connection.cursor()
+        cursor.execute("PRAGMA foreign_keys=ON")
+        cursor.close()
 
 async_session_factory = async_sessionmaker(
     bind=engine,

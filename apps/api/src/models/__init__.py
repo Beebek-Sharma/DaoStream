@@ -11,6 +11,10 @@ from .user import (
     User,
     UserRole,
 )
+from .progress import (
+    WatchProgress,
+    ReadingProgress,
+)
 
 __all__ = [
     "Media",
@@ -22,4 +26,6 @@ __all__ = [
     "Book",
     "User",
     "UserRole",
+    "WatchProgress",
+    "ReadingProgress",
 ]

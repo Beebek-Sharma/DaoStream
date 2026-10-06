@@ -3,6 +3,7 @@ import asyncio
 from pathlib import Path
 from starlette.testclient import TestClient
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
+from sqlalchemy import event
 
 from src.main import app
 from src.db.base import Base
@@ -15,6 +16,14 @@ test_engine = create_async_engine(
     echo=False,
     connect_args={"check_same_thread": False},
 )
+
+
+@event.listens_for(test_engine.sync_engine, "connect")
+def set_test_sqlite_pragma(dbapi_connection, connection_record):
+    cursor = dbapi_connection.cursor()
+    cursor.execute("PRAGMA foreign_keys=ON")
+    cursor.close()
+
 
 test_session_factory = async_sessionmaker(
     bind=test_engine,

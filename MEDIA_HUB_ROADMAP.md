@@ -1564,21 +1564,22 @@ Gemini must maintain this section.
 
 ```text
 Current Phase: 2
-Current Step: 2.2
+Current Step: 2.3
 Status: COMPLETE
 
 Completed:
 - Phase 1 Foundation 100% Complete (1.1 Repo, 1.2 API Skeleton, 1.3 Web Skeleton, 1.4 DB Foundation, 1.5 Dev Environment)
 - 2.1 Media models: Media, Movie, Series, Season, Episode, Book models and migration (a799ed90aa63)
-- 2.2 User model:
-  - Created User, UserRole (admin, user) SQLAlchemy declarative model in apps/api/src/models/user.py
-  - Configured unique indexed email and username, secure hashed_password storage, is_active, is_superuser, and JSON preferences
-  - Generated and executed Alembic migration d98998ac5637_create_users_table.py
-  - Authored comprehensive test suite (test_user_model.py) verifying user creation, uniqueness constraints, roles, and default flags
-  - Configured isolated test database fixture in conftest.py; 13/13 backend tests passing (0.38s)
+- 2.2 User model: User model with unique constraints, role support, and migration (d98998ac5637)
+- 2.3 Progress models:
+  - Created WatchProgress model (media_id, episode_id, position, duration, percentage, completed)
+  - Created ReadingProgress model (book_id, location, percentage, completed, bookmarks JSON)
+  - Configured composite unique constraints and cascade deletion relationships
+  - Generated and executed Alembic migration b3dd5465782e_create_progress_tables.py
+  - Authored test_progress_models.py verifying movie watch progress, series episode progress, book reading progress, and cascade delete; 17/17 tests passing (0.59s)
 
 Next:
-- Step 2.3: Progress models (WatchProgress and ReadingProgress SQLAlchemy models with user/media foreign keys, position, and completion tracking)
+- Step 2.4: Library models (Watchlist, Favorites, and Collections SQLAlchemy declarative models)
 ```
 
 After each completed step, update:
