@@ -1563,9 +1563,9 @@ A phase is complete only when:
 Gemini must maintain this section.
 
 ```text
-Current Phase: 8
-Current Step: 8.6
-Status: COMPLETE (Phase 8 Video Player 100% Complete)
+Current Phase: 9
+Current Step: 9.5
+Status: COMPLETE (Phase 9 Series / Anime / Drama Experience 100% Complete)
 
 Completed:
 - Phase 1 Foundation 100% Complete (1.1 Repo, 1.2 API Skeleton, 1.3 Web Skeleton, 1.4 DB Foundation, 1.5 Dev Environment)
@@ -1575,17 +1575,18 @@ Completed:
 - Phase 5 Metadata System 100% Complete (5.1 Federated Search, 5.2 TTL Cache, 5.3 Metadata Service, 5.4 Media Endpoints, 5.5 Tests)
 - Phase 6 External API Integration 100% Complete (6.1 OpenLibrary, 6.2 TMDB Adapter, 6.3 Configuration UI, 6.4 Error Resilience, 6.5 Tests, 6.6 Docs)
 - Phase 7 Source Resolution 100% Complete (7.1 Schemas, 7.2 Resolver Service, 7.3 Ranking, 7.4 Fallback, 7.5 Subtitles, 7.6 Playback API)
-- Phase 8 Video Player:
-  - 8.1: Modern dark cinematic VideoPlayer component in apps/web/src/components/player/VideoPlayer.tsx
-  - 8.2: Full custom playback controls (play/pause, seek scrubber, volume/mute, speed selection, fullscreen) with keyboard shortcuts (Space, K, F, M, Arrow Keys)
-  - 8.3: Integrated subtitle track switcher and overlay rendering
-  - 8.4: Dynamic quality switching (4K, 1080p, 720p) maintaining playback timestamps
-  - 8.5: Automatic watch progress synchronization to backend /api/v1/library/progress/watch
-  - 8.6: Interactive Movies page integration with one-click instant playback; 45/45 backend tests passing, frontend production build verified (0 errors)
+- Phase 8 Video Player 100% Complete (8.1 Video Player, 8.2 Controls, 8.3 Subtitles, 8.4 Quality, 8.5 Progress Sync, 8.6 Movies Integration)
+- Phase 9 Series / Anime / Drama Experience:
+  - 9.1: Multi-season & episode browsing modal SeriesDetailModal.tsx with season tabs and episode lists
+  - 9.2: Direct episodic playback routing with season/episode parameter passing to source resolver
+  - 9.3: Continue watching & Next Episode flow with onNextEpisode transition support in VideoPlayer
+  - 9.4: Distinct Asian drama and Anime catalog pages with Sub/Dub categorization and arc indicators
+  - 9.5: Verified with production web build and 45/45 backend tests passing
 
 Next:
-- PHASE 9 — Series / Anime / Drama Experience
-  - Step 9.1: Multi-season & episode navigation, episode selector drawer, and continue watching workflow
+- PHASE 10 — Book and Novel Reader
+  - Step 10.1: Full book reader experience (EPUB / Markdown / text) with chapter navigation, fonts, themes, and reading progress
+
 
 
 
