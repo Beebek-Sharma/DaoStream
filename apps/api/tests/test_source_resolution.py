@@ -11,6 +11,13 @@ from src.providers.registry import provider_registry
 from src.services.resolver_service import source_resolver_service
 
 
+@pytest.fixture(autouse=True)
+def reset_resolver_cache():
+    source_resolver_service._cache.clear()
+    yield
+    source_resolver_service._cache.clear()
+
+
 class FailingStreamingProvider(StreamingProviderInterface):
     """Provider specifically designed to simulate provider timeouts / failures."""
 

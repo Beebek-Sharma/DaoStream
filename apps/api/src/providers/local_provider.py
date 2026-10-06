@@ -86,7 +86,25 @@ class LocalMediaProvider(MetadataProviderInterface, StreamingProviderInterface, 
         episode_number: Optional[int] = None,
     ) -> List[NormalizedPlaybackSource]:
         """Generate high-speed local stream endpoint URL for local media."""
-        # Provider builds direct local endpoint with query params if season/episode specified
+        is_local = provider_media_id.startswith("local-")
+        if not is_local:
+            try:
+                from src.db.session import async_session_factory
+                from src.models.media import Media
+                from sqlalchemy import select
+
+                async with async_session_factory() as db:
+                    stmt = select(Media).where(Media.id == provider_media_id)
+                    res = await db.execute(stmt)
+                    media = res.scalar_one_or_none()
+                    if media and media.metadata_payload and media.metadata_payload.get("is_local"):
+                        is_local = True
+            except Exception:
+                is_local = False
+
+        if not is_local:
+            return []
+
         query_suffix = ""
         if season_number is not None and episode_number is not None:
             query_suffix = f"?season={season_number}&episode={episode_number}"
@@ -95,11 +113,12 @@ class LocalMediaProvider(MetadataProviderInterface, StreamingProviderInterface, 
 
         return [
             NormalizedPlaybackSource(
+                id=f"local-{provider_media_id}",
+                title="Local Stream (1080p)",
                 url=source_url,
                 quality="1080p",
                 format="mp4",
                 is_direct=True,
-                bitrate_kbps=12000,
                 headers={},
                 subtitles=[],
             )

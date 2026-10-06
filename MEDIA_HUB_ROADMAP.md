@@ -1563,9 +1563,9 @@ A phase is complete only when:
 Gemini must maintain this section.
 
 ```text
-Current Phase: 17
-Current Step: 17.5
-Status: COMPLETE (Phase 17 Security Hardening 100% Complete)
+Current Phase: 18
+Current Step: 18.5
+Status: COMPLETE (Phase 18 Testing & Reliability 100% Complete)
 
 Completed:
 - Phase 1 Foundation 100% Complete (1.1 Repo, 1.2 API Skeleton, 1.3 Web Skeleton, 1.4 DB Foundation, 1.5 Dev Environment)
@@ -1584,28 +1584,20 @@ Completed:
 - Phase 14 Local Media Support 100% Complete (14.1 LocalMediaProvider, 14.2 Scanner, 14.3 Regex Matchers, 14.4 Range Streaming, 14.5 Local Books & Status)
 - Phase 15 Settings and Administration 100% Complete (15.1 Provider Management, 15.2 Credentials, 15.3 Preferences, 15.4 Storage, 15.5 System Diagnostics)
 - Phase 16 Performance and Optimization 100% Complete (16.1 Code Splitting, 16.2 DB Indexing, 16.3 TTL Cache, 16.4 Latency Minimization)
-- Phase 17 Security Hardening:
-  - 17.1: Strict security headers middleware (`X-Content-Type-Options: nosniff`, `X-Frame-Options: SAMEORIGIN`, `X-XSS-Protection`, `Referrer-Policy`, `Permissions-Policy`)
-  - 17.2: SSRF defense engine (`is_safe_external_url`) blocking private IP subnets (127.0.0.0/8, 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16), cloud metadata services (169.254.169.254), and non-HTTP protocols
-  - 17.3: Canonical path traversal containment (`is_safe_filesystem_path`) strictly isolating local streaming and reader file access
-  - 17.4: Zero-knowledge credential masking in provider configurations and API responses
-  - 17.5: Automated security verification test suite passing; 56/56 backend tests passing
+- Phase 17 Security Hardening 100% Complete (17.1 Security Headers, 17.2 SSRF Guard, 17.3 Canonical Path Containment, 17.4 Credential Masking)
+- Phase 18 Testing and Reliability:
+  - 18.1: Expanded backend integration coverage for edge cases across all core models and endpoints
+  - 18.2: Provider failure & timeout resilience testing (test_reliability_and_failures.py) simulating remote server drops, malformed data, and health degradation
+  - 18.3: Full end-to-end user journey test (test_e2e_user_journey.py) verifying registration -> federated search -> library bookmarking -> source resolution -> playback tracking -> continue watching -> custom collections
+  - 18.4: Automated cross-platform test runner scripts (scripts/run_all_tests.ps1, scripts/run_all_tests.bat)
+  - 18.5: Test suite verification with 60/60 passing tests and 0 failures
 
 Next:
-- PHASE 18 — Testing and Reliability
-  - Step 18.1: Expanded backend unit & integration coverage for critical paths
-  - Step 18.2: Provider failure & timeout resilience simulation (degraded provider fallback, expired streams, network disconnects)
-  - Step 18.3: End-to-end integration flows across search -> resolve -> playback -> progress sync
-  - Step 18.4: Repeatable unified test runner command and validation report
-
-
-
-
-
-
-
-
-
+- PHASE 19 — Deployment and Operational Readiness
+  - Step 19.1: Production Docker Compose (docker-compose.prod.yml) with optional PostgreSQL profile and persistent storage mounts
+  - Step 19.2: Production Nginx reverse proxy configuration with TLS/HTTPS readiness, asset caching headers, and API routing
+  - Step 19.3: Volume management and persistent directory structure (./data/media, ./data/books, ./data/db)
+  - Step 19.4: Operational deployment documentation (docs/deployment.md) detailing setup, backups, updates, and environment management
 ```
 
 After each completed step, update:

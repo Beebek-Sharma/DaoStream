@@ -69,6 +69,12 @@ async def add_to_watchlist(
 ):
     media = await db.get(Media, media_id)
     if not media:
+        from src.services.metadata_service import metadata_service
+        details = await metadata_service.get_media_details(media_id)
+        if details:
+            media = await metadata_service.sync_media_to_db(details, db)
+
+    if not media:
         raise HTTPException(status_code=404, detail="Media item not found")
 
     stmt = select(Watchlist).where(
@@ -137,6 +143,12 @@ async def add_to_favorites(
 ):
     media = await db.get(Media, media_id)
     if not media:
+        from src.services.metadata_service import metadata_service
+        details = await metadata_service.get_media_details(media_id)
+        if details:
+            media = await metadata_service.sync_media_to_db(details, db)
+
+    if not media:
         raise HTTPException(status_code=404, detail="Media item not found")
 
     stmt = select(Favorite).where(
@@ -199,6 +211,14 @@ async def save_watch_progress(
         await db.commit()
         return {"status": "updated", "id": existing.id, "percentage": pct, "completed": is_completed}
     else:
+        # Ensure media item exists in db
+        media = await db.get(Media, payload.media_id)
+        if not media:
+            from src.services.metadata_service import metadata_service
+            details = await metadata_service.get_media_details(payload.media_id)
+            if details:
+                await metadata_service.sync_media_to_db(details, db)
+
         new_prog = WatchProgress(
             user_id=current_user.id,
             media_id=payload.media_id,
@@ -215,6 +235,7 @@ async def save_watch_progress(
 
 
 @router.get("/progress/watch")
+@router.get("/continue-watching")
 async def get_watch_progress_list(
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
