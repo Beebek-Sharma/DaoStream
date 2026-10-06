@@ -137,6 +137,29 @@ class MetadataService:
 
         return None
 
+    async def get_chapter_text(
+        self,
+        provider_media_id: str,
+        chapter_index: int,
+    ) -> Optional[str]:
+        """Fetch raw chapter text content from registered book providers."""
+        cache_key = f"chapter:{provider_media_id}:{chapter_index}"
+        cached = metadata_cache.get(cache_key)
+        if cached is not None:
+            return cached
+
+        providers = provider_registry.get_book_providers()
+        for p in providers:
+            try:
+                text = await p.get_chapter_text(provider_media_id, chapter_index)
+                if text is not None:
+                    metadata_cache.set(cache_key, text, ttl_seconds=1200)
+                    return text
+            except Exception as exc:
+                logger.warning(f"Provider {p.info.id} failed fetching chapter text: {exc}")
+
+        return None
+
     async def sync_media_to_db(
         self,
         details: NormalizedMediaDetails,

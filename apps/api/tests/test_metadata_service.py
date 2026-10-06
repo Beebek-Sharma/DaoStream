@@ -103,6 +103,12 @@ async def test_metadata_api_endpoints():
         assert book_res.json()["title"] == "The Quantum Cartographer"
         assert len(book_res.json()["chapters"]) == 2
 
-        # 5. 404 for unknown media
+        # 5. Book chapter text endpoint
+        chap_res = await ac.get("/api/v1/media/mock-b-1/book/chapter/1", headers=headers)
+        assert chap_res.status_code == 200
+        assert "quantum mapping" in chap_res.json()["content"].lower()
+
+        # 6. 404 for unknown media
         unknown_res = await ac.get("/api/v1/media/non-existent-id-999", headers=headers)
         assert unknown_res.status_code == 404
+

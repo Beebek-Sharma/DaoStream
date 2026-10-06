@@ -1563,9 +1563,9 @@ A phase is complete only when:
 Gemini must maintain this section.
 
 ```text
-Current Phase: 9
-Current Step: 9.5
-Status: COMPLETE (Phase 9 Series / Anime / Drama Experience 100% Complete)
+Current Phase: 10
+Current Step: 10.5
+Status: COMPLETE (Phase 10 Book and Novel Reader 100% Complete)
 
 Completed:
 - Phase 1 Foundation 100% Complete (1.1 Repo, 1.2 API Skeleton, 1.3 Web Skeleton, 1.4 DB Foundation, 1.5 Dev Environment)
@@ -1576,16 +1576,18 @@ Completed:
 - Phase 6 External API Integration 100% Complete (6.1 OpenLibrary, 6.2 TMDB Adapter, 6.3 Configuration UI, 6.4 Error Resilience, 6.5 Tests, 6.6 Docs)
 - Phase 7 Source Resolution 100% Complete (7.1 Schemas, 7.2 Resolver Service, 7.3 Ranking, 7.4 Fallback, 7.5 Subtitles, 7.6 Playback API)
 - Phase 8 Video Player 100% Complete (8.1 Video Player, 8.2 Controls, 8.3 Subtitles, 8.4 Quality, 8.5 Progress Sync, 8.6 Movies Integration)
-- Phase 9 Series / Anime / Drama Experience:
-  - 9.1: Multi-season & episode browsing modal SeriesDetailModal.tsx with season tabs and episode lists
-  - 9.2: Direct episodic playback routing with season/episode parameter passing to source resolver
-  - 9.3: Continue watching & Next Episode flow with onNextEpisode transition support in VideoPlayer
-  - 9.4: Distinct Asian drama and Anime catalog pages with Sub/Dub categorization and arc indicators
-  - 9.5: Verified with production web build and 45/45 backend tests passing
+- Phase 9 Series / Anime / Drama Experience 100% Complete (9.1 Episodes Modal, 9.2 Playback Routing, 9.3 Next Episode, 9.4 Categorization, 9.5 Tests)
+- Phase 10 Book and Novel Reader:
+  - 10.1: Chapter content REST endpoint (GET /api/v1/media/{id}/book/chapter/{idx}) and metadata service chapter text retrieval
+  - 10.2: Full-screen distraction-free BookReader component in apps/web/src/components/reader/BookReader.tsx
+  - 10.3: Reader appearance preferences (Obsidian dark, Sepia warm, Porcelain light themes; font size 14-28px; Serif, Sans, Mono fonts; relaxed/loose line spacing)
+  - 10.4: Table of contents drawer, previous/next chapter navigation, keyboard shortcuts (Left/Right arrows, Esc)
+  - 10.5: Automatic reading progress synchronization with backend /api/v1/library/progress/reading, books catalog integration in BooksPage.tsx, 45/45 tests passing, and frontend build verified (0 errors)
 
 Next:
-- PHASE 10 — Book and Novel Reader
-  - Step 10.1: Full book reader experience (EPUB / Markdown / text) with chapter navigation, fonts, themes, and reading progress
+- PHASE 11 — Unified Search
+  - Step 11.1: Global unified search UI with instantaneous debouncing, multi-category filters, and keyboard shortcut (Cmd+K / Ctrl+K)
+
 
 
 

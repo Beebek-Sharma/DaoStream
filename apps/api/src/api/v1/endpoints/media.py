@@ -92,3 +92,24 @@ async def get_book_content(
             detail=f"Book content for '{media_id}' not found",
         )
     return content
+
+
+@router.get("/{media_id}/book/chapter/{chapter_index}")
+async def get_book_chapter(
+    media_id: str,
+    chapter_index: int,
+    current_user: User = Depends(get_current_user),
+):
+    """Get readable text content for a specific chapter."""
+    text = await metadata_service.get_chapter_text(media_id, chapter_index)
+    if text is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Chapter {chapter_index} for '{media_id}' not found",
+        )
+    return {
+        "media_id": media_id,
+        "chapter_index": chapter_index,
+        "content": text,
+    }
+

@@ -197,3 +197,66 @@ export async function fetchWatchProgress(): Promise<any[]> {
   return res.json();
 }
 
+// Book & Reading Progress API
+export interface BookChapter {
+  chapter_index: number;
+  title: string;
+  word_count?: number;
+}
+
+export interface BookContent {
+  provider_id: string;
+  book_id: string;
+  title: string;
+  author?: string;
+  total_chapters: number;
+  chapters: BookChapter[];
+}
+
+export async function fetchBookContent(mediaId: string): Promise<BookContent> {
+  const res = await fetch(`${API_BASE}/media/${mediaId}/book`, {
+    headers: { ...authHeader() },
+  });
+  if (!res.ok) throw new Error('Failed to fetch book content');
+  return res.json();
+}
+
+export async function fetchBookChapter(mediaId: string, chapterIndex: number): Promise<{ content: string }> {
+  const res = await fetch(`${API_BASE}/media/${mediaId}/book/chapter/${chapterIndex}`, {
+    headers: { ...authHeader() },
+  });
+  if (!res.ok) throw new Error('Failed to fetch chapter text');
+  return res.json();
+}
+
+export async function updateReadingProgress(
+  mediaId: string,
+  currentPage: number,
+  totalPages: number,
+  progressPercentage: number,
+  lastLocation?: string
+): Promise<any> {
+  const res = await fetch(`${API_BASE}/library/progress/reading`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeader() },
+    body: JSON.stringify({
+      media_id: mediaId,
+      current_page: currentPage,
+      total_pages: totalPages,
+      progress_percentage: progressPercentage,
+      last_location: lastLocation,
+    }),
+  });
+  if (!res.ok) throw new Error('Failed to update reading progress');
+  return res.json();
+}
+
+export async function fetchReadingProgress(): Promise<any[]> {
+  const res = await fetch(`${API_BASE}/library/progress/reading`, {
+    headers: { ...authHeader() },
+  });
+  if (!res.ok) return [];
+  return res.json();
+}
+
+
