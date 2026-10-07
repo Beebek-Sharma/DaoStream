@@ -123,12 +123,20 @@ export const HomePage: React.FC = () => {
     };
   }, []);
 
-  const handlePlayMedia = async (mediaId: string, mediaType: string, title: string) => {
+  const handlePlayMedia = async (
+    mediaId: string,
+    mediaType: string,
+    title: string,
+    seasonNumber?: number,
+    episodeNumber?: number,
+    episodeTitle?: string
+  ) => {
     try {
-      const resolved = await resolvePlayback(mediaId, mediaType);
+      const resolved = await resolvePlayback(mediaId, mediaType, seasonNumber, episodeNumber);
       setActiveVideo({
         data: resolved,
         title,
+        episodeTitle,
         mediaId,
       });
     } catch (err) {
@@ -824,7 +832,10 @@ export const HomePage: React.FC = () => {
             handlePlayMedia(
               selectedSeries.provider_media_id,
               selectedSeries.media_type,
-              `${selectedSeries.title} - S${seasonNum}E${epNumber}${epTitle ? `: ${epTitle}` : ''}`
+              selectedSeries.title,
+              seasonNum,
+              epNumber,
+              `S${seasonNum}:E${epNumber}${epTitle ? ` - ${epTitle}` : ''}`
             );
           }}
 

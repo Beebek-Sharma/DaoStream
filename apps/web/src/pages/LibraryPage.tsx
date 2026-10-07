@@ -123,20 +123,21 @@ export const LibraryPage: React.FC = () => {
       setActiveVideo({ data: playback, title });
     } catch (err) {
       console.warn('Fallback play:', err);
+      const fallbackSource = {
+        id: `${mediaId}-direct-1080p`,
+        title: `${title} (Authorized 1080p)`,
+        quality: '1080p',
+        format: 'mp4',
+        url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+        is_direct: true,
+        subtitles: [],
+      };
       setActiveVideo({
         data: {
           media_id: mediaId,
           media_type: mediaType,
-          primary_source: {
-            id: `${mediaId}-direct-1080p`,
-            title: `${title} (Authorized 1080p)`,
-            quality: '1080p',
-            format: 'mp4',
-            url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
-            is_direct: true,
-            subtitles: [],
-          },
-          sources: [],
+          primary_source: fallbackSource,
+          sources: [fallbackSource],
           available_qualities: ['1080p'],
           subtitles: [],
           expires_in_seconds: 7200,

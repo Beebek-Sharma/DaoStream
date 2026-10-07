@@ -500,7 +500,7 @@ export const SearchPage: React.FC = () => {
             try {
               const playback = await resolvePlayback(
                 selectedSeries.provider_media_id,
-                'series',
+                selectedSeries.media_type || 'series',
                 seasonNum,
                 epNumber
               );
