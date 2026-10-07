@@ -18,9 +18,11 @@ import {
 import { ResolvedPlayback, updateWatchProgress } from '../../services/api';
 
 interface VideoPlayerProps {
-  playbackData: ResolvedPlayback;
+  playbackData?: ResolvedPlayback;
+  playback?: ResolvedPlayback;
   title: string;
   episodeTitle?: string;
+  mediaId?: string;
   onClose: () => void;
   onNextEpisode?: () => void;
   initialTime?: number;
@@ -28,12 +30,17 @@ interface VideoPlayerProps {
 
 export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   playbackData,
+  playback,
   title,
   episodeTitle,
+  mediaId,
   onClose,
   onNextEpisode,
   initialTime = 0,
 }) => {
+  const activePlaybackData = playbackData || playback;
+  if (!activePlaybackData) return null;
+
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -46,7 +53,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [showControls, setShowControls] = useState<boolean>(true);
   const [selectedQuality, setSelectedQuality] = useState<string>(
-    playbackData.primary_source?.quality || '1080p'
+    activePlaybackData.primary_source?.quality || '1080p'
   );
   const [selectedSubtitle, setSelectedSubtitle] = useState<string>('off');
   const [playbackSpeed, setPlaybackSpeed] = useState<number>(1);
@@ -58,9 +65,9 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
   // Active video source according to selected quality
   const activeSource =
-    playbackData.sources.find(s => s.quality === selectedQuality) ||
-    playbackData.primary_source ||
-    playbackData.sources[0];
+    activePlaybackData.sources.find(s => s.quality === selectedQuality) ||
+    activePlaybackData.primary_source ||
+    activePlaybackData.sources[0];
 
   // Auto-hide controls timer
   const resetControlsTimeout = useCallback(() => {
@@ -120,23 +127,26 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
     };
   }, [initialTime, activeSource]);
 
+  const targetMediaId = mediaId || activePlaybackData.media_id;
+
   // Periodic watch progress sync
   useEffect(() => {
     const interval = setInterval(() => {
       if (currentTime > 0 && duration > 0) {
         const completed = currentTime / duration > 0.92;
         updateWatchProgress(
-          playbackData.media_id,
+          targetMediaId,
           currentTime,
           duration,
           completed,
-          playbackData.episode_number?.toString()
+          activePlaybackData.episode_number?.toString()
         ).catch(() => {});
       }
     }, 10000);
 
     return () => clearInterval(interval);
-  }, [currentTime, duration, playbackData]);
+  }, [currentTime, duration, targetMediaId, activePlaybackData]);
+
 
   // Play / Pause toggle
   const togglePlay = () => {
@@ -437,7 +447,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
             <div className="flex items-center gap-3 relative">
               {/* Subtitles Button */}
-              {playbackData.subtitles.length > 0 && (
+              {activePlaybackData.subtitles.length > 0 && (
                 <div className="relative">
                   <button
                     onClick={() => {
@@ -468,7 +478,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
                       >
                         Off
                       </button>
-                      {playbackData.subtitles.map(sub => (
+                      {activePlaybackData.subtitles.map(sub => (
                         <button
                           key={sub.id}
                           onClick={() => {
@@ -508,7 +518,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
                         Quality
                       </div>
                       <div className="flex flex-wrap gap-1">
-                        {playbackData.available_qualities.map(q => (
+                        {activePlaybackData.available_qualities.map(q => (
                           <button
                             key={q}
                             onClick={() => handleQualityChange(q)}
@@ -523,6 +533,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
                         ))}
                       </div>
                     </div>
+
 
                     {/* Speed */}
                     <div className="pt-2 border-t border-white/5">

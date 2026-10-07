@@ -8,57 +8,79 @@
   }
   
   body {
-    background-color: #090B10;
-    color: #F3F4F6;
+    background-color: #0e1416;
+    color: #dee3e5;
     overflow-x: hidden;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
 
-  /* Accessible focus indicators for keyboard navigation */
+  /* Accessible focus indicators for keyboard navigation (Obsidian Cyan) */
   :focus-visible {
-    outline: 2px solid #6366f1 !important;
+    outline: 2px solid #0da1ba !important;
     outline-offset: 2px !important;
-    border-radius: 4px;
+    border-radius: 6px;
   }
 }
 
-/* Custom subtle scrollbars */
+/* Custom subtle obsidian scrollbars */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #090B10;
+  background: #090f11;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #1D2538;
+  background: #252b2d;
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #2D3A56;
+  background: #343a3c;
 }
 
-/* Glassmorphism helpers */
+/* Obsidian Glassmorphism helpers */
 .glass-panel {
-  background: rgba(17, 21, 31, 0.85);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background: rgba(23, 29, 30, 0.88);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .glass-card {
-  background: rgba(22, 28, 42, 0.65);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: rgba(27, 33, 34, 0.7);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
   border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* Interactive Card Hover Transition */
+.card-hover-lift {
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card-hover-lift:hover {
+  transform: translateY(-3px) scale(1.015);
+  border-color: rgba(13, 161, 186, 0.45);
+  box-shadow: 0 16px 32px -10px rgba(0, 0, 0, 0.7);
 }
 
 /* Accessible focus ring utility */
 .focus-ring {
-  @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#090B10];
+  @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-[#0e1416];
+}
+
+/* Material Symbols Outlined helper */
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  vertical-align: middle;
+  line-height: 1;
+}
+
+.material-symbols-filled {
+  font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
 }
 
 /* Respect user preference for reduced motion */

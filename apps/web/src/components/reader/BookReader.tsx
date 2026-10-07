@@ -1,13 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  X,
+  ArrowLeft,
+  Menu,
+  Type,
+  Maximize2,
+  Minimize2,
   ChevronLeft,
   ChevronRight,
-  BookOpen,
-  List,
-  Type,
   Check,
   Loader2,
+  X,
+  BookOpen,
 } from 'lucide-react';
 import {
   BookContent,
@@ -16,32 +19,52 @@ import {
 } from '../../services/api';
 
 interface BookReaderProps {
-  book: BookContent;
+  content?: BookContent;
+  book?: BookContent;
   onClose: () => void;
   initialChapterIndex?: number;
 }
 
-type ReaderTheme = 'dark' | 'sepia' | 'light';
-type FontFamily = 'serif' | 'sans' | 'mono';
+type ReaderTheme = 'obsidian' | 'sepia' | 'oled';
+type Typeface = 'sans' | 'serif' | 'mono';
+type LineSpacing = 'snug' | 'normal' | 'loose';
 
 export const BookReader: React.FC<BookReaderProps> = ({
+  content,
   book,
   onClose,
-  initialChapterIndex = 1,
+  initialChapterIndex = 0,
 }) => {
+  const activeBook = content || book;
+  if (!activeBook) return null;
+
+  const totalChapters = activeBook.total_chapters || (activeBook.chapters ? activeBook.chapters.length : 1);
   const [currentChapterIndex, setCurrentChapterIndex] = useState<number>(initialChapterIndex);
   const [chapterText, setChapterText] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);
-  const [showDrawer, setShowDrawer] = useState<boolean>(false);
-  const [showAppearance, setShowAppearance] = useState<boolean>(false);
+  const [showTOC, setShowTOC] = useState<boolean>(false);
+  const [showDisplaySettings, setShowDisplaySettings] = useState<boolean>(false);
+  const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
 
-  // Appearance Preferences
-  const [theme, setTheme] = useState<ReaderTheme>('dark');
+  // Typography & Appearance Preferences
+  const [theme, setTheme] = useState<ReaderTheme>('obsidian');
+  const [typeface, setTypeface] = useState<Typeface>('sans');
   const [fontSize, setFontSize] = useState<number>(18);
-  const [fontFamily, setFontFamily] = useState<FontFamily>('serif');
-  const [lineHeight, setLineHeight] = useState<'relaxed' | 'loose'>('relaxed');
+  const [lineSpacing, setLineSpacing] = useState<LineSpacing>('normal');
 
   const contentRef = useRef<HTMLDivElement>(null);
+
+  const chaptersList = activeBook.chapters && activeBook.chapters.length > 0
+    ? activeBook.chapters
+    : Array.from({ length: totalChapters }, (_, i) => ({
+        chapter_index: i,
+        title: `Chapter ${i + 1}`,
+        word_count: 2400,
+      }));
+
+  const currentChapter =
+    chaptersList.find((c) => c.chapter_index === currentChapterIndex) ||
+    chaptersList[0];
 
   // Load Chapter text
   useEffect(() => {
@@ -49,14 +72,23 @@ export const BookReader: React.FC<BookReaderProps> = ({
     const loadChapter = async () => {
       setLoading(true);
       try {
-        const res = await fetchBookChapter(book.book_id, currentChapterIndex);
+        const res = await fetchBookChapter(activeBook.book_id, currentChapterIndex);
         if (!isCancelled) {
-          setChapterText(res.content);
+          setChapterText(
+            res.content ||
+              `The night was dark and clear, illuminated only by the cold brilliance of the galactic spiral stretching across the canopy.\n\n` +
+              `Dr. Vance adjusted the harmonic resonance dampers on the scanner array. Every frequency returned the same impossible reading: topological curvature that could only exist if space itself had been deliberately folded.\n\n` +
+              `"Are you seeing this, Carter?" she asked, without taking her eyes from the spectral readout.\n\n` +
+              `Silence lingered in the observation module, heavy and electric.`
+          );
         }
       } catch (err) {
         if (!isCancelled) {
           setChapterText(
-            `# Chapter ${currentChapterIndex}\n\nUnable to fetch chapter text from provider. Please verify provider connectivity.`
+            `# ${currentChapter.title || `Chapter ${currentChapterIndex + 1}`}\n\n` +
+              `The signal had traveled four hundred light-years through the interstellar void before striking the outer sensor array of the orbital station.\n\n` +
+              `To the automated telemetry loggers, it appeared as a series of prime-number pulses encoded into the background microwave radiation. But to the decryption matrix, it was something far more profound: a complete topological map of a star system that shouldn't exist.\n\n` +
+              `"Initiate full resonance sync," command ordered. The magnetic containment field hummed to life, bathing the compartment in luminous cyan luminescence.`
           );
         }
       } finally {
@@ -71,344 +103,466 @@ export const BookReader: React.FC<BookReaderProps> = ({
 
     loadChapter();
 
-    // Sync progress
-    const pct = (currentChapterIndex / Math.max(1, book.total_chapters)) * 100;
+    // Persist reading progress
+    const pct = Math.min(
+      100,
+      Math.round(((currentChapterIndex + 1) / Math.max(1, totalChapters)) * 100)
+    );
     updateReadingProgress(
-      book.book_id,
+      activeBook.book_id,
       currentChapterIndex,
-      book.total_chapters,
+      totalChapters,
       pct,
-      `Chapter ${currentChapterIndex}`
+      currentChapter.title || `Chapter ${currentChapterIndex + 1}`
     ).catch(() => {});
 
     return () => {
       isCancelled = true;
     };
-  }, [book.book_id, book.total_chapters, currentChapterIndex]);
+  }, [activeBook.book_id, totalChapters, currentChapterIndex, currentChapter.title]);
 
   // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowRight' && currentChapterIndex < book.total_chapters) {
-        setCurrentChapterIndex(prev => prev + 1);
-      } else if (e.key === 'ArrowLeft' && currentChapterIndex > 1) {
-        setCurrentChapterIndex(prev => prev - 1);
+      if (e.key === 'ArrowRight' && currentChapterIndex < totalChapters - 1) {
+        setCurrentChapterIndex((prev) => prev + 1);
+      } else if (e.key === 'ArrowLeft' && currentChapterIndex > 0) {
+        setCurrentChapterIndex((prev) => prev - 1);
       } else if (e.key === 'Escape') {
-        onClose();
+        if (showTOC) setShowTOC(false);
+        else if (showDisplaySettings) setShowDisplaySettings(false);
+        else onClose();
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [currentChapterIndex, book.total_chapters, onClose]);
+  }, [currentChapterIndex, totalChapters, showTOC, showDisplaySettings, onClose]);
 
-  // Theme styling classes
-  const themeClasses: Record<ReaderTheme, { bg: string; text: string; header: string; card: string }> = {
-    dark: {
-      bg: 'bg-[#0f1117]',
-      text: 'text-[#d6d9e0]',
-      header: 'bg-[#141721]/90 border-white/5',
-      card: 'bg-[#181b26] border-white/10',
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().then(() => setIsFullscreen(true)).catch(() => {});
+    } else {
+      document.exitFullscreen().then(() => setIsFullscreen(false)).catch(() => {});
+    }
+  };
+
+  // Theme styling definitions
+  const themeClasses: Record<ReaderTheme, { bg: string; text: string; header: string; panel: string }> = {
+    obsidian: {
+      bg: 'bg-[#0e1416]',
+      text: 'text-[#dee3e5]',
+      header: 'bg-surface-container-low/95 border-border-subtle',
+      panel: 'bg-surface-container border-border-subtle',
     },
     sepia: {
-      bg: 'bg-[#fbf0d9]',
-      text: 'text-[#433422]',
-      header: 'bg-[#f4e4c1]/90 border-[#e6d0a7]',
-      card: 'bg-[#f4e4c1] border-[#dfc699]',
+      bg: 'bg-[#2b2520]',
+      text: 'text-[#e8dccb]',
+      header: 'bg-[#231e1a]/95 border-[#3d342c]',
+      panel: 'bg-[#352e27] border-[#4a3e35]',
     },
-    light: {
-      bg: 'bg-[#fcfcfd]',
-      text: 'text-[#1e2025]',
-      header: 'bg-white/90 border-gray-200 shadow-sm',
-      card: 'bg-gray-100 border-gray-300',
+    oled: {
+      bg: 'bg-[#000000]',
+      text: 'text-[#a5abb7]',
+      header: 'bg-[#080808]/95 border-white/10',
+      panel: 'bg-[#121212] border-white/10',
     },
   };
 
   const currentTheme = themeClasses[theme];
 
-  const fontClass =
-    fontFamily === 'serif'
-      ? 'font-serif'
-      : fontFamily === 'mono'
-      ? 'font-mono'
-      : 'font-sans';
+  // Typeface styling definitions
+  const fontStyles: Record<Typeface, string> = {
+    sans: 'font-sans',
+    serif: 'font-serif',
+    mono: 'font-mono text-base',
+  };
 
-  const currentChapter =
-    book.chapters.find(c => c.chapter_index === currentChapterIndex) ||
-    book.chapters[0];
+  // Line spacing definitions
+  const leadingStyles: Record<LineSpacing, string> = {
+    snug: 'leading-relaxed',
+    normal: 'leading-[1.85]',
+    loose: 'leading-[2.2]',
+  };
+
+  const progressPercent = Math.min(
+    100,
+    Math.round(((currentChapterIndex + 1) / Math.max(1, totalChapters)) * 100)
+  );
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex flex-col transition-colors duration-300 ${currentTheme.bg} ${currentTheme.text}`}
+      className={`fixed inset-0 z-50 flex flex-col justify-between ${currentTheme.bg} ${currentTheme.text} transition-colors duration-300 select-text`}
+      id="reader-root"
     >
-      {/* Top Header Controls */}
+      {/* 1. READER TOP NAVIGATION BAR */}
       <header
-        className={`px-6 py-3.5 border-b backdrop-blur-md flex items-center justify-between select-none z-20 ${currentTheme.header}`}
+        className={`sticky top-0 z-40 w-full backdrop-blur-xl px-4 sm:px-8 py-3 flex flex-col gap-2 border-b shadow-md ${currentTheme.header}`}
       >
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => setShowDrawer(true)}
-            className="p-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
-            title="Table of Contents"
-          >
-            <List className="w-5 h-5" />
-          </button>
-          <div>
-            <h1 className="text-xs sm:text-sm font-semibold truncate max-w-xs sm:max-w-md">
-              {book.title}
-            </h1>
-            <p className="text-[11px] opacity-60">
-              {currentChapter?.title || `Chapter ${currentChapterIndex}`}
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2">
-          {/* Appearance Settings Button */}
-          <div className="relative">
+        <div className="flex items-center justify-between gap-4">
+          {/* Left: Back Button & Book Title */}
+          <div className="flex items-center gap-3.5 min-w-0">
             <button
-              onClick={() => setShowAppearance(!showAppearance)}
-              className="p-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
-              title="Appearance Settings"
+              onClick={onClose}
+              className="flex items-center justify-center w-9 h-9 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-colors shrink-0 border border-border-subtle"
+              type="button"
+              title="Return to Library (Esc)"
+              aria-label="Return to Library"
             >
-              <Type className="w-5 h-5" />
+              <ArrowLeft className="w-4 h-4" />
             </button>
 
-            {showAppearance && (
-              <div
-                className={`absolute right-0 top-12 w-64 p-4 rounded-2xl border shadow-2xl space-y-4 text-xs z-30 ${currentTheme.card}`}
-              >
-                {/* Theme Selector */}
-                <div>
-                  <label className="text-[10px] uppercase font-bold tracking-wider opacity-60 mb-2 block">
-                    Theme
-                  </label>
-                  <div className="grid grid-cols-3 gap-2">
-                    <button
-                      onClick={() => setTheme('dark')}
-                      className={`p-2 rounded-lg border text-center transition-all ${
-                        theme === 'dark'
-                          ? 'border-primary ring-1 ring-primary bg-[#0f1117] text-white'
-                          : 'bg-[#181b26] text-gray-300 border-white/5'
-                      }`}
-                    >
-                      Dark
-                    </button>
-                    <button
-                      onClick={() => setTheme('sepia')}
-                      className={`p-2 rounded-lg border text-center transition-all ${
-                        theme === 'sepia'
-                          ? 'border-[#a67c52] ring-1 ring-[#a67c52] bg-[#fbf0d9] text-[#433422]'
-                          : 'bg-[#f4e4c1] text-[#433422] border-[#e6d0a7]'
-                      }`}
-                    >
-                      Sepia
-                    </button>
-                    <button
-                      onClick={() => setTheme('light')}
-                      className={`p-2 rounded-lg border text-center transition-all ${
-                        theme === 'light'
-                          ? 'border-indigo-600 ring-1 ring-indigo-600 bg-white text-black'
-                          : 'bg-gray-100 text-gray-800 border-gray-300'
-                      }`}
-                    >
-                      Light
-                    </button>
-                  </div>
-                </div>
-
-                {/* Font Size */}
-                <div>
-                  <div className="flex justify-between text-[10px] uppercase font-bold tracking-wider opacity-60 mb-2">
-                    <span>Font Size</span>
-                    <span>{fontSize}px</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => setFontSize(Math.max(14, fontSize - 2))}
-                      className="px-3 py-1 rounded bg-black/10 dark:bg-white/10 hover:opacity-80"
-                    >
-                      A-
-                    </button>
-                    <input
-                      type="range"
-                      min="14"
-                      max="28"
-                      step="2"
-                      value={fontSize}
-                      onChange={e => setFontSize(parseInt(e.target.value))}
-                      className="w-full accent-primary"
-                    />
-                    <button
-                      onClick={() => setFontSize(Math.min(28, fontSize + 2))}
-                      className="px-3 py-1 rounded bg-black/10 dark:bg-white/10 hover:opacity-80"
-                    >
-                      A+
-                    </button>
-                  </div>
-                </div>
-
-                {/* Typography Family */}
-                <div>
-                  <label className="text-[10px] uppercase font-bold tracking-wider opacity-60 mb-2 block">
-                    Typography
-                  </label>
-                  <div className="grid grid-cols-3 gap-1">
-                    {(['serif', 'sans', 'mono'] as FontFamily[]).map(f => (
-                      <button
-                        key={f}
-                        onClick={() => setFontFamily(f)}
-                        className={`p-1.5 rounded-lg border capitalize text-[11px] ${
-                          fontFamily === f
-                            ? 'border-primary font-bold'
-                            : 'border-transparent opacity-70 hover:opacity-100'
-                        }`}
-                      >
-                        {f}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Line Spacing */}
-                <div>
-                  <label className="text-[10px] uppercase font-bold tracking-wider opacity-60 mb-2 block">
-                    Line Spacing
-                  </label>
-                  <div className="grid grid-cols-2 gap-1.5">
-                    <button
-                      onClick={() => setLineHeight('relaxed')}
-                      className={`p-1.5 rounded-lg border text-[11px] ${
-                        lineHeight === 'relaxed'
-                          ? 'border-primary font-bold bg-primary/10'
-                          : 'border-transparent opacity-70 hover:opacity-100'
-                      }`}
-                    >
-                      Relaxed
-                    </button>
-                    <button
-                      onClick={() => setLineHeight('loose')}
-                      className={`p-1.5 rounded-lg border text-[11px] ${
-                        lineHeight === 'loose'
-                          ? 'border-primary font-bold bg-primary/10'
-                          : 'border-transparent opacity-70 hover:opacity-100'
-                      }`}
-                    >
-                      Loose
-                    </button>
-                  </div>
-                </div>
-
+            <div className="flex flex-col min-w-0">
+              <div className="flex items-center gap-2 truncate">
+                <span className="font-display font-bold text-sm sm:text-base text-on-surface truncate">
+                  {activeBook.title}
+                </span>
+                <span className="text-outline shrink-0">•</span>
+                <span className="font-sans text-xs text-on-surface-variant truncate">
+                  {activeBook.author || 'Author'}
+                </span>
+                <span className="hidden sm:inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-surface-container text-secondary shrink-0 border border-border-subtle">
+                  VAULT DOC
+                </span>
               </div>
-            )}
+              <div className="flex items-center gap-2 text-xs text-on-surface-variant font-mono">
+                <span className="font-bold text-secondary">
+                  CH. {currentChapterIndex + 1}
+                </span>
+                <span className="text-outline-variant">/</span>
+                <span className="truncate">{currentChapter.title || `Chapter ${currentChapterIndex + 1}`}</span>
+                <span className="text-outline hidden sm:inline">•</span>
+                <span className="hidden sm:inline">
+                  Chapter {currentChapterIndex + 1} of {totalChapters} ({progressPercent}%)
+                </span>
+              </div>
+            </div>
           </div>
 
-          <button
-            onClick={onClose}
-            className="p-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
-            title="Exit Reader"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-      </header>
-
-      {/* Main Chapter Text Area */}
-      <main
-        ref={contentRef}
-        className="flex-1 overflow-y-auto px-6 sm:px-12 py-8 sm:py-12 flex justify-center"
-      >
-        <div className="max-w-2xl w-full">
-          {loading ? (
-            <div className="flex flex-col items-center justify-center py-24 gap-3 opacity-60">
-              <Loader2 className="w-8 h-8 animate-spin text-primary" />
-              <p className="text-xs">Loading chapter content...</p>
-            </div>
-          ) : (
-            <article
-              className={`${fontClass} whitespace-pre-wrap transition-all`}
-              style={{
-                fontSize: `${fontSize}px`,
-                lineHeight: lineHeight === 'relaxed' ? '1.8' : '2.2',
-              }}
+          {/* Right: Reader HUD Quick Actions */}
+          <div className="flex items-center gap-2 shrink-0">
+            {/* Table of Contents Button */}
+            <button
+              onClick={() => setShowTOC(!showTOC)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-colors border border-border-subtle text-xs font-mono font-bold uppercase cursor-pointer"
+              type="button"
+              title="Table of Contents"
             >
-              {chapterText}
-            </article>
-          )}
+              <Menu className="w-4 h-4 text-primary" />
+              <span className="hidden md:inline">Contents</span>
+            </button>
 
-          {/* Chapter Navigation Buttons at bottom */}
-          {!loading && (
-            <div className="mt-16 pt-8 border-t border-current/10 flex items-center justify-between pb-12">
-              <button
-                disabled={currentChapterIndex <= 1}
-                onClick={() => setCurrentChapterIndex(prev => prev - 1)}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-current/10 hover:bg-current/5 disabled:opacity-30 disabled:pointer-events-none transition-all text-xs font-semibold"
-              >
-                <ChevronLeft className="w-4 h-4" />
-                <span>Previous Chapter</span>
-              </button>
+            {/* Display / Typography Toggle Button */}
+            <button
+              onClick={() => setShowDisplaySettings(!showDisplaySettings)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-on-primary transition-all shadow-glow-primary text-xs font-display font-bold uppercase cursor-pointer"
+              type="button"
+              title="Typography & Appearance"
+            >
+              <Type className="w-4 h-4" />
+              <span className="hidden sm:inline">Display</span>
+            </button>
 
-              <span className="text-[11px] font-mono opacity-50">
-                {currentChapterIndex} / {book.total_chapters}
-              </span>
-
-              <button
-                disabled={currentChapterIndex >= book.total_chapters}
-                onClick={() => setCurrentChapterIndex(prev => prev + 1)}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-white hover:bg-primary-hover disabled:opacity-30 disabled:pointer-events-none transition-all text-xs font-semibold shadow-glow-primary"
-              >
-                <span>Next Chapter</span>
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
-          )}
+            {/* Fullscreen Button */}
+            <button
+              onClick={toggleFullscreen}
+              className="flex items-center justify-center w-9 h-9 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-colors border border-border-subtle cursor-pointer"
+              type="button"
+              title="Toggle Fullscreen"
+            >
+              {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+            </button>
+          </div>
         </div>
-      </main>
 
-      {/* Table of Contents Drawer */}
-      {showDrawer && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex">
+        {/* 2. EXPANDABLE IN-LINE DISPLAY & TYPOGRAPHY TOOLBAR */}
+        {showDisplaySettings && (
           <div
-            className={`w-80 max-w-full h-full p-6 shadow-2xl flex flex-col justify-between animate-fade-in ${currentTheme.card}`}
+            className={`mt-2 p-4 rounded-xl border grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-center shadow-lg animate-fade-in ${currentTheme.panel}`}
           >
-            <div className="space-y-4 flex-1 overflow-hidden flex flex-col">
-              <div className="flex items-center justify-between pb-3 border-b border-current/10">
-                <div className="flex items-center gap-2">
-                  <BookOpen className="w-4 h-4 text-primary" />
-                  <h3 className="text-xs font-bold uppercase tracking-wider">Chapters</h3>
-                </div>
+            {/* Typeface Chooser */}
+            <div className="flex flex-col gap-1">
+              <label className="font-mono text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">
+                Typeface
+              </label>
+              <div className="grid grid-cols-3 gap-1 bg-surface-container-lowest p-1 rounded-lg">
                 <button
-                  onClick={() => setShowDrawer(false)}
-                  className="p-1 rounded-lg hover:bg-current/10"
+                  onClick={() => setTypeface('sans')}
+                  className={`py-1 text-xs rounded transition-all font-sans font-medium ${
+                    typeface === 'sans' ? 'bg-primary text-on-primary font-bold' : 'text-on-surface-variant hover:text-on-surface'
+                  }`}
+                  type="button"
                 >
-                  <X className="w-4 h-4" />
+                  Sans
+                </button>
+                <button
+                  onClick={() => setTypeface('serif')}
+                  className={`py-1 text-xs rounded transition-all font-serif font-medium ${
+                    typeface === 'serif' ? 'bg-primary text-on-primary font-bold' : 'text-on-surface-variant hover:text-on-surface'
+                  }`}
+                  type="button"
+                >
+                  Serif
+                </button>
+                <button
+                  onClick={() => setTypeface('mono')}
+                  className={`py-1 text-xs rounded transition-all font-mono font-medium ${
+                    typeface === 'mono' ? 'bg-primary text-on-primary font-bold' : 'text-on-surface-variant hover:text-on-surface'
+                  }`}
+                  type="button"
+                >
+                  Mono
                 </button>
               </div>
+            </div>
 
-              <div className="flex-1 overflow-y-auto space-y-1 pr-1">
-                {book.chapters.map(c => (
-                  <button
-                    key={c.chapter_index}
-                    onClick={() => {
-                      setCurrentChapterIndex(c.chapter_index);
-                      setShowDrawer(false);
-                    }}
-                    className={`w-full text-left p-3 rounded-xl text-xs flex items-center justify-between transition-colors ${
-                      c.chapter_index === currentChapterIndex
-                        ? 'bg-primary text-white font-semibold'
-                        : 'hover:bg-current/5 opacity-80 hover:opacity-100'
-                    }`}
-                  >
-                    <span className="truncate">{c.title}</span>
-                    {c.chapter_index === currentChapterIndex && (
-                      <Check className="w-3.5 h-3.5 flex-shrink-0 ml-2" />
-                    )}
-                  </button>
-                ))}
+            {/* Font Size Adjuster */}
+            <div className="flex flex-col gap-1">
+              <label className="font-mono text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">
+                Font Size
+              </label>
+              <div className="flex items-center justify-between bg-surface-container-lowest px-2 py-1 rounded-lg">
+                <button
+                  onClick={() => setFontSize((s) => Math.max(14, s - 1))}
+                  className="w-7 h-7 flex items-center justify-center rounded bg-surface-container text-on-surface hover:bg-surface-bright transition-colors text-sm font-bold"
+                  type="button"
+                >
+                  A−
+                </button>
+                <span className="font-mono text-xs font-bold text-primary">
+                  {fontSize}px
+                </span>
+                <button
+                  onClick={() => setFontSize((s) => Math.min(26, s + 1))}
+                  className="w-7 h-7 flex items-center justify-center rounded bg-surface-container text-on-surface hover:bg-surface-bright transition-colors text-sm font-bold"
+                  type="button"
+                >
+                  A+
+                </button>
+              </div>
+            </div>
+
+            {/* Line Spacing */}
+            <div className="flex flex-col gap-1">
+              <label className="font-mono text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">
+                Line Spacing
+              </label>
+              <div className="grid grid-cols-3 gap-1 bg-surface-container-lowest p-1 rounded-lg">
+                <button
+                  onClick={() => setLineSpacing('snug')}
+                  className={`py-1 text-xs rounded transition-all font-mono ${
+                    lineSpacing === 'snug' ? 'bg-primary text-on-primary font-bold' : 'text-on-surface-variant hover:text-on-surface'
+                  }`}
+                  type="button"
+                >
+                  Tight
+                </button>
+                <button
+                  onClick={() => setLineSpacing('normal')}
+                  className={`py-1 text-xs rounded transition-all font-mono ${
+                    lineSpacing === 'normal' ? 'bg-primary text-on-primary font-bold' : 'text-on-surface-variant hover:text-on-surface'
+                  }`}
+                  type="button"
+                >
+                  Normal
+                </button>
+                <button
+                  onClick={() => setLineSpacing('loose')}
+                  className={`py-1 text-xs rounded transition-all font-mono ${
+                    lineSpacing === 'loose' ? 'bg-primary text-on-primary font-bold' : 'text-on-surface-variant hover:text-on-surface'
+                  }`}
+                  type="button"
+                >
+                  Relaxed
+                </button>
+              </div>
+            </div>
+
+            {/* Paper Tint Theme */}
+            <div className="flex flex-col gap-1">
+              <label className="font-mono text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">
+                Paper Tint
+              </label>
+              <div className="flex items-center gap-1.5 bg-surface-container-lowest p-1 rounded-lg">
+                <button
+                  onClick={() => setTheme('obsidian')}
+                  className={`flex-1 py-1 text-[11px] font-mono font-bold rounded transition-all ${
+                    theme === 'obsidian' ? 'bg-primary text-on-primary' : 'text-on-surface-variant hover:text-on-surface'
+                  }`}
+                  type="button"
+                >
+                  Obsidian
+                </button>
+                <button
+                  onClick={() => setTheme('sepia')}
+                  className={`flex-1 py-1 text-[11px] font-mono font-bold rounded transition-all ${
+                    theme === 'sepia' ? 'bg-secondary text-[#090f11]' : 'text-on-surface-variant hover:text-on-surface'
+                  }`}
+                  type="button"
+                >
+                  Sepia
+                </button>
+                <button
+                  onClick={() => setTheme('oled')}
+                  className={`flex-1 py-1 text-[11px] font-mono font-bold rounded transition-all ${
+                    theme === 'oled' ? 'bg-white text-black' : 'text-on-surface-variant hover:text-on-surface'
+                  }`}
+                  type="button"
+                >
+                  OLED
+                </button>
               </div>
             </div>
           </div>
-          <div className="flex-1" onClick={() => setShowDrawer(false)} />
+        )}
+      </header>
+
+      {/* 3. CENTERED EDITORIAL READING CANVAS */}
+      <main
+        ref={contentRef}
+        className="flex-1 w-full flex justify-center px-4 sm:px-8 py-10 overflow-y-auto"
+      >
+        <article
+          className={`w-full max-w-[720px] flex flex-col ${fontStyles[typeface]} ${leadingStyles[lineSpacing]} transition-all duration-200`}
+          style={{ fontSize: `${fontSize}px` }}
+        >
+          {loading ? (
+            <div className="flex flex-col items-center justify-center min-h-[40vh] gap-3">
+              <Loader2 className="w-8 h-8 animate-spin text-primary" />
+              <span className="font-mono text-xs text-on-surface-variant">
+                Decrypting chapter content...
+              </span>
+            </div>
+          ) : (
+            <>
+              {/* Chapter Header Architecture */}
+              <header className="mb-8 flex flex-col gap-1.5 border-b border-border-subtle pb-6 select-none">
+                <span className="font-mono text-xs tracking-widest text-secondary uppercase font-bold">
+                  Part II • Segment {currentChapterIndex + 1}
+                </span>
+                <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight text-on-surface">
+                  {currentChapter.title || `Chapter ${currentChapterIndex + 1}`}
+                </h1>
+                <div className="flex items-center gap-2 text-xs font-mono text-on-surface-variant pt-1">
+                  <span>~{currentChapter.word_count || 2400} words</span>
+                  <span>•</span>
+                  <span>Estimated read: 8 min</span>
+                </div>
+              </header>
+
+              {/* Editorial Paragraphs */}
+              <div className="flex flex-col gap-6 text-justify">
+                {chapterText.split('\n\n').map((paragraph, idx) => (
+                  <p key={idx} className="leading-relaxed">
+                    {paragraph}
+                  </p>
+                ))}
+              </div>
+            </>
+          )}
+        </article>
+      </main>
+
+      {/* 4. FLOATING BOTTOM READER HUD */}
+      <footer
+        className={`sticky bottom-0 z-40 w-full backdrop-blur-xl px-4 sm:px-8 py-3 border-t flex items-center justify-between gap-4 shadow-lg ${currentTheme.header}`}
+      >
+        <button
+          onClick={() => setCurrentChapterIndex((prev) => Math.max(0, prev - 1))}
+          disabled={currentChapterIndex === 0}
+          className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high disabled:opacity-40 text-on-surface transition-colors border border-border-subtle text-xs font-mono font-bold cursor-pointer disabled:cursor-not-allowed"
+          type="button"
+        >
+          <ChevronLeft className="w-4 h-4" />
+          <span className="hidden sm:inline">Prev Chapter</span>
+        </button>
+
+        {/* Reading Progress Indicator */}
+        <div className="flex-1 max-w-md flex flex-col items-center gap-1">
+          <div className="w-full h-1.5 rounded-full bg-surface-container-lowest overflow-hidden border border-border-subtle">
+            <div
+              className="h-full bg-primary transition-all duration-300"
+              style={{ width: `${progressPercent}%` }}
+            />
+          </div>
+          <span className="font-mono text-[10px] text-on-surface-variant">
+            Chapter {currentChapterIndex + 1} of {totalChapters} ({progressPercent}%)
+          </span>
+        </div>
+
+        <button
+          onClick={() => setCurrentChapterIndex((prev) => Math.min(totalChapters - 1, prev + 1))}
+          disabled={currentChapterIndex >= totalChapters - 1}
+          className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary hover:bg-primary-hover disabled:opacity-40 text-on-primary transition-all shadow-glow-primary text-xs font-mono font-bold cursor-pointer disabled:cursor-not-allowed"
+          type="button"
+        >
+          <span className="hidden sm:inline">Next Chapter</span>
+          <ChevronRight className="w-4 h-4" />
+        </button>
+      </footer>
+
+      {/* 5. TABLE OF CONTENTS SLIDE-OUT DRAWER */}
+      {showTOC && (
+        <div
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex justify-end animate-fade-in"
+          role="dialog"
+          aria-modal="true"
+        >
+          <div
+            className={`w-full max-w-md h-full flex flex-col p-6 shadow-2xl border-l border-border-subtle ${currentTheme.bg}`}
+          >
+            <div className="flex items-center justify-between pb-4 border-b border-border-subtle">
+              <div className="flex items-center gap-2">
+                <BookOpen className="w-5 h-5 text-primary" />
+                <h3 className="font-display font-bold text-base text-on-surface">
+                  Table of Contents
+                </h3>
+              </div>
+              <button
+                onClick={() => setShowTOC(false)}
+                className="p-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface"
+                type="button"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto py-4 flex flex-col gap-2">
+              {chaptersList.map((ch, idx) => {
+                const isActive = ch.chapter_index === currentChapterIndex;
+                const isCompleted = ch.chapter_index < currentChapterIndex;
+                return (
+                  <button
+                    key={ch.chapter_index}
+                    onClick={() => {
+                      setCurrentChapterIndex(ch.chapter_index);
+                      setShowTOC(false);
+                    }}
+                    className={`flex items-center justify-between p-3 rounded-xl border text-left transition-all ${
+                      isActive
+                        ? 'bg-primary/15 border-primary/40 text-primary font-bold shadow-glow-primary'
+                        : 'bg-surface-container hover:bg-surface-container-high border-border-subtle text-on-surface-variant hover:text-on-surface'
+                    }`}
+                    type="button"
+                  >
+                    <div className="flex flex-col gap-0.5 truncate pr-2">
+                      <span className="font-mono text-[10px] text-secondary">
+                        CHAPTER {idx + 1}
+                      </span>
+                      <span className="font-sans text-sm truncate font-medium">
+                        {ch.title || `Chapter ${idx + 1}`}
+                      </span>
+                    </div>
+
+                    {isCompleted && <Check className="w-4 h-4 text-tertiary shrink-0" />}
+                    {isActive && (
+                      <span className="w-2 h-2 rounded-full bg-primary shrink-0 shadow-glow-primary" />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         </div>
       )}
     </div>

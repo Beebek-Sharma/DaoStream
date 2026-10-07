@@ -2,16 +2,18 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   Search,
-  Sparkles,
   Film,
   Tv,
   BookOpen,
   Layers,
   Star,
   Play,
-  BookMarked,
+  HardDrive,
   Loader2,
   X,
+  LayoutGrid,
+  List as ListIcon,
+  Zap,
 } from 'lucide-react';
 import {
   searchMedia,
@@ -29,12 +31,14 @@ import { BookReader } from '../components/reader/BookReader';
 
 export const SearchPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const initialQuery = searchParams.get('q') || '';
+  const initialQuery = searchParams.get('q') || 'Cyberpunk';
 
   const [query, setQuery] = useState<string>(initialQuery);
   const [activeFilter, setActiveFilter] = useState<string>('all');
   const [results, setResults] = useState<MediaItem[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [latencyMs, setLatencyMs] = useState<number>(48);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Modals / Players state
@@ -49,9 +53,18 @@ export const SearchPage: React.FC = () => {
   const filters = [
     { id: 'all', label: 'All Media', icon: Layers, mediaType: undefined },
     { id: 'movies', label: 'Movies', icon: Film, mediaType: 'movie' },
-    { id: 'series', label: 'TV Series', icon: Tv, mediaType: 'series' },
-    { id: 'anime', label: 'Anime', icon: Sparkles, mediaType: 'anime' },
-    { id: 'books', label: 'Books', icon: BookOpen, mediaType: 'book' },
+    { id: 'series', label: 'Series & Anime', icon: Tv, mediaType: 'series' },
+    { id: 'books', label: 'Books & Novels', icon: BookOpen, mediaType: 'book' },
+    { id: 'local', label: 'Local Vault Only', icon: HardDrive, mediaType: undefined },
+  ];
+
+  const suggestionTags = [
+    'Cyberpunk',
+    'Hard Sci-Fi',
+    'Space Opera',
+    '4K UHD',
+    'Dolby Atmos',
+    'Completed Series',
   ];
 
   // Global Ctrl+K / Cmd+K focus shortcut
@@ -60,6 +73,8 @@ export const SearchPage: React.FC = () => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
         inputRef.current?.focus();
+      } else if (e.key === 'Escape') {
+        inputRef.current?.blur();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -76,22 +91,28 @@ export const SearchPage: React.FC = () => {
     }
 
     setSearchParams({ q: trimmed }, { replace: true });
-
     setLoading(true);
-    const selectedType = filters.find(f => f.id === activeFilter)?.mediaType;
+
+    const startTime = performance.now();
+    const currentFilterDef = filters.find((f) => f.id === activeFilter);
+    const selectedType = currentFilterDef?.mediaType;
 
     const timeout = setTimeout(async () => {
       try {
         const items = await searchMedia(trimmed, selectedType);
-        setResults(items || []);
+        let filtered = items || [];
+        if (activeFilter === 'local') {
+          filtered = filtered.filter((i) => i.provider_id === 'local-media');
+        }
+        setResults(filtered);
+        setLatencyMs(Math.max(24, Math.round(performance.now() - startTime)));
       } catch (err) {
         console.warn('Search query fallback:', err);
-        // Fallback filter over mock data
         setResults([]);
       } finally {
         setLoading(false);
       }
-    }, 280);
+    }, 250);
 
     return () => clearTimeout(timeout);
   }, [query, activeFilter]);
@@ -99,240 +120,347 @@ export const SearchPage: React.FC = () => {
   const handleActionClick = async (item: MediaItem) => {
     if (item.media_type === 'movie') {
       try {
-        const playback = await resolvePlayback(item.provider_media_id, 'movie');
-        setActiveVideo({ data: playback, title: item.title });
+        const resolved = await resolvePlayback(item.provider_media_id, 'movie');
+        setActiveVideo({ data: resolved, title: item.title });
       } catch (err) {
-        console.warn('Fallback movie playback:', err);
+        console.error('Failed to resolve movie:', err);
       }
     } else if (item.media_type === 'series' || item.media_type === 'anime') {
       try {
         const details = await fetchMediaDetails(item.provider_media_id, item.media_type);
         setSelectedSeries(details);
       } catch (err) {
-        console.warn('Fallback series details:', err);
+        console.error('Failed to load series details:', err);
       }
     } else if (item.media_type === 'book') {
       try {
-        const content = await fetchBookContent(item.provider_media_id);
-        setActiveBook(content);
+        const bookData = await fetchBookContent(item.provider_media_id);
+        setActiveBook(bookData);
       } catch (err) {
-        console.warn('Fallback book content:', err);
+        console.error('Failed to load book:', err);
       }
-    }
-  };
-
-  const handlePlayEpisodeFromModal = async (
-    seasonNumber: number,
-    episodeNumber: number,
-    epTitle: string
-  ) => {
-    if (!selectedSeries) return;
-    try {
-      const playback = await resolvePlayback(
-        selectedSeries.provider_media_id,
-        selectedSeries.media_type,
-        seasonNumber,
-        episodeNumber
-      );
-      setActiveVideo({
-        data: playback,
-        title: selectedSeries.title,
-        episodeTitle: `S${seasonNumber}:E${episodeNumber} - ${epTitle}`,
-      });
-    } catch (err) {
-      console.warn('Fallback episode playback:', err);
     }
   };
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8 animate-fade-in pb-16">
-      {/* Search Header */}
-      <div className="space-y-4">
-        <h1 className="text-3xl font-extrabold text-white tracking-tight">Federated Search</h1>
-        <p className="text-xs sm:text-sm text-gray-400">
-          Search movies, shows, anime, and books across all active providers in real time.
-        </p>
+    <div className="relative flex flex-col gap-8 w-full -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-2">
+      {/* Subtle Ambient Glow Canvas Decorators */}
+      <div
+        className="pointer-events-none absolute -top-40 right-1/4 w-[520px] h-[520px] rounded-full blur-[140px] opacity-60"
+        style={{ backgroundColor: 'rgba(13, 161, 186, 0.12)' }}
+      />
+      <div
+        className="pointer-events-none absolute top-48 left-12 w-[380px] h-[380px] rounded-full blur-[100px] opacity-50"
+        style={{ backgroundColor: 'rgba(97, 214, 240, 0.08)' }}
+      />
 
-        {/* Search Input */}
-        <div className="relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+      {/* 1. SEARCH CONTROL BAR & FEDERATED METRICS TOPLINE */}
+      <section className="relative z-10 flex flex-col gap-4">
+        {/* Topline & Engine Telemetry */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-3">
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-secondary animate-pulse" />
+              <span className="font-mono text-[11px] font-bold uppercase text-secondary tracking-wider">
+                Federated Engine v3.4
+              </span>
+              <span className="font-mono text-[11px] text-outline">/</span>
+              <span className="font-mono text-[11px] uppercase text-on-surface-variant font-medium">
+                Cluster Synchronized
+              </span>
+            </div>
+            <h1 className="font-display text-3xl sm:text-4xl text-on-surface font-extrabold tracking-tight">
+              Universal Catalog Exploration
+            </h1>
+          </div>
+
+          <div className="flex items-center gap-2 bg-surface-container-low px-4 py-1.5 rounded-full border border-border-subtle shadow-sm">
+            <Zap className="w-4 h-4 text-primary" />
+            <span className="font-mono text-xs text-on-surface">
+              Query resolved in <span className="text-secondary font-bold">{latencyMs}ms</span> across 3 adapters
+            </span>
+            <span className="font-mono text-[10px] uppercase font-bold bg-surface-container-high px-2 py-0.5 rounded text-outline ml-1">
+              NAS • TMDB • OL
+            </span>
+          </div>
+        </div>
+
+        {/* Master Search Input Bar */}
+        <div className="relative w-full group">
+          <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
+            <Search className="w-5 h-5 text-primary group-focus-within:text-secondary transition-colors" />
+          </div>
           <input
             ref={inputRef}
             type="text"
             value={query}
-            onChange={e => setQuery(e.target.value)}
-            placeholder="Type a title, actor, author, or keyword (Ctrl+K)..."
-            className="w-full pl-12 pr-10 py-3.5 rounded-2xl bg-background-elevated border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 text-sm md:text-base transition-all"
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search across universal catalog: movies, anime, series, books, authors..."
+            className="w-full bg-surface-container-low text-on-surface placeholder:text-outline font-display text-base sm:text-lg pl-14 pr-36 py-4 rounded-xl border border-border-subtle focus:outline-none focus:border-primary/50 focus:bg-surface-container transition-all shadow-md"
             autoFocus
           />
-          {query && (
-            <button
-              onClick={() => setQuery('')}
-              className="absolute right-3.5 top-1/2 -translate-y-1/2 p-1 rounded-full text-gray-400 hover:text-white"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          )}
-        </div>
-
-        {/* Filter Pills */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-2">
-          {filters.map(filter => {
-            const Icon = filter.icon;
-            const isSelected = activeFilter === filter.id;
-            return (
+          <div className="absolute inset-y-0 right-0 pr-4 flex items-center gap-2">
+            {query && (
               <button
-                key={filter.id}
-                onClick={() => setActiveFilter(filter.id)}
-                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition-all ${
-                  isSelected
-                    ? 'bg-primary text-white shadow-glow-primary'
-                    : 'bg-background-card border border-white/5 text-gray-400 hover:text-white hover:bg-white/5'
-                }`}
+                onClick={() => {
+                  setQuery('');
+                  inputRef.current?.focus();
+                }}
+                className="p-1.5 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors"
+                type="button"
+                title="Clear Query"
               >
-                <Icon className="w-3.5 h-3.5" />
-                <span>{filter.label}</span>
+                <X className="w-4 h-4" />
               </button>
-            );
-          })}
+            )}
+            <div className="h-5 w-px bg-border-subtle mx-1" />
+            <span className="font-mono text-xs font-bold bg-surface-container-high px-2 py-1 rounded text-primary border border-border-subtle">
+              ESC to exit
+            </span>
+          </div>
         </div>
-      </div>
+      </section>
 
-      {/* Results View */}
-      {loading ? (
-        <div className="flex flex-col items-center justify-center py-20 gap-3 text-gray-400">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
-          <p className="text-xs">Querying connected providers...</p>
-        </div>
-      ) : results.length > 0 ? (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between text-xs text-gray-400">
-            <span>Results ({results.length})</span>
-            <span className="font-mono">Federated Response</span>
+      {/* 2. MULTI-FILTER SCOPE PILLS & LIVE INDEX STATS */}
+      <section className="relative z-10 flex flex-col gap-4">
+        <div className="flex items-center justify-between gap-4 overflow-x-auto pb-1 scrollbar-none">
+          <div className="flex items-center gap-2 shrink-0">
+            {filters.map((f) => {
+              const Icon = f.icon;
+              const isActive = activeFilter === f.id;
+              return (
+                <button
+                  key={f.id}
+                  onClick={() => setActiveFilter(f.id)}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-full font-display text-xs sm:text-sm font-semibold transition-all cursor-pointer ${
+                    isActive
+                      ? 'bg-primary text-on-primary shadow-glow-primary'
+                      : 'bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface border border-border-subtle'
+                  }`}
+                  type="button"
+                >
+                  <Icon className="w-3.5 h-3.5" />
+                  <span>{f.label}</span>
+                  {isActive && results.length > 0 && (
+                    <span className="font-mono text-[10px] bg-on-primary/20 px-1.5 py-0.5 rounded-full ml-0.5">
+                      {results.length}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5">
-            {results.map(item => (
+          {/* Density / View Mode Toggles */}
+          <div className="hidden lg:flex items-center gap-1.5 shrink-0 bg-surface-container-low p-1 rounded-lg border border-border-subtle">
+            <button
+              onClick={() => setViewMode('grid')}
+              className={`p-1.5 rounded transition-colors ${
+                viewMode === 'grid' ? 'bg-surface-container text-primary shadow-sm' : 'text-on-surface-variant hover:text-on-surface'
+              }`}
+              title="Grid View"
+              type="button"
+            >
+              <LayoutGrid className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setViewMode('list')}
+              className={`p-1.5 rounded transition-colors ${
+                viewMode === 'list' ? 'bg-surface-container text-primary shadow-sm' : 'text-on-surface-variant hover:text-on-surface'
+              }`}
+              title="List View"
+              type="button"
+            >
+              <ListIcon className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
+        {/* Suggestion Tag Cloud */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs">
+          <span className="font-mono text-[11px] font-bold text-outline uppercase shrink-0">
+            Refine:
+          </span>
+          {suggestionTags.map((tag) => (
+            <button
+              key={tag}
+              onClick={() => setQuery(tag)}
+              className="px-3 py-1 rounded-full bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-primary transition-colors border border-border-subtle font-mono text-[11px] shrink-0 cursor-pointer"
+              type="button"
+            >
+              #{tag}
+            </button>
+          ))}
+        </div>
+      </section>
+
+      {/* 3. FEDERATED SEARCH RESULTS MATRIX */}
+      <section className="relative z-10 flex flex-col gap-4">
+        {loading ? (
+          <div className="flex flex-col items-center justify-center min-h-[35vh] gap-3">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            <span className="font-mono text-xs text-on-surface-variant">
+              Querying federated providers in parallel...
+            </span>
+          </div>
+        ) : results.length === 0 ? (
+          <div className="p-12 text-center rounded-2xl bg-surface-container/60 border border-border-subtle flex flex-col items-center gap-3">
+            <Search className="w-10 h-10 text-outline" />
+            <h3 className="font-display font-bold text-lg text-on-surface">
+              No matching catalog items found
+            </h3>
+            <p className="font-sans text-xs sm:text-sm text-on-surface-variant max-w-md">
+              Try searching for alternative keywords like "Cyberpunk", "Dune", "Celestial", or clear category filters.
+            </p>
+          </div>
+        ) : viewMode === 'grid' ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
+            {results.map((item) => (
               <div
                 key={`${item.provider_id}-${item.provider_media_id}`}
                 onClick={() => handleActionClick(item)}
-                className="group relative rounded-2xl overflow-hidden glass-card border border-white/5 hover:border-primary/40 transition-all duration-300 hover:shadow-cinematic hover:translate-y-[-2px] flex flex-col cursor-pointer"
+                className="group flex flex-col bg-surface-container rounded-xl overflow-hidden border border-border-subtle hover:border-primary/40 transition-all duration-200 cursor-pointer card-hover-lift shadow-md"
               >
-                <div className="aspect-[2/3] relative overflow-hidden bg-background-elevated">
+                <div className="relative aspect-[2/3] w-full overflow-hidden bg-surface-container-lowest">
                   <img
                     src={
                       item.poster_url ||
                       'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&q=80'
                     }
                     alt={item.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   />
+                  <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-transparent to-transparent opacity-80" />
 
-                  {/* Play / Read Icon Overlay */}
-                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                    <div className="w-12 h-12 rounded-full bg-primary hover:bg-primary-hover text-white flex items-center justify-center shadow-glow-primary transform group-hover:scale-110 transition-transform">
-                      {item.media_type === 'book' ? (
-                        <BookMarked className="w-5 h-5 fill-white" />
-                      ) : (
-                        <Play className="w-5 h-5 fill-white ml-0.5" />
-                      )}
+                  {/* Rating Badge */}
+                  {item.rating && (
+                    <div className="absolute top-2 left-2 flex items-center gap-1 bg-surface-container-high/90 backdrop-blur-md px-2 py-0.5 rounded text-[11px] font-mono font-bold text-secondary">
+                      <Star className="w-3 h-3 fill-secondary text-secondary" />
+                      {item.rating.toFixed(1)}
                     </div>
-                  </div>
+                  )}
 
-                  {/* Type Badge */}
-                  <div className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-md bg-black/70 backdrop-blur-md border border-white/10 text-[10px] font-mono uppercase text-indigo-300 font-semibold">
+                  {/* Category Chip */}
+                  <div className="absolute top-2 right-2 bg-surface-container-highest/90 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold text-primary uppercase">
                     {item.media_type}
                   </div>
 
-                  {/* Rating */}
-                  {item.rating && (
-                    <div className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-md bg-black/70 backdrop-blur-md border border-white/10 text-[10px] font-semibold text-amber-400 flex items-center gap-1">
-                      <Star className="w-3 h-3 fill-amber-400" />
-                      <span>{item.rating}</span>
-                    </div>
-                  )}
-                </div>
-
-                <div className="p-3.5 flex-1 flex flex-col justify-between">
-                  <div>
-                    <h3 className="text-xs font-semibold text-white truncate group-hover:text-primary transition-colors">
-                      {item.title}
-                    </h3>
-                    <div className="flex items-center gap-2 text-[11px] text-gray-400 mt-0.5">
-                      {item.year && <span>{item.year}</span>}
+                  {/* Play/Inspect Action Overlay */}
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40">
+                    <div className="w-11 h-11 rounded-full bg-primary text-on-primary flex items-center justify-center shadow-glow-primary">
+                      {item.media_type === 'book' ? (
+                        <BookOpen className="w-5 h-5 fill-current" />
+                      ) : (
+                        <Play className="w-5 h-5 fill-current ml-0.5" />
+                      )}
                     </div>
                   </div>
+                </div>
 
-                  <div className="mt-2 text-center py-1.5 px-2 rounded-lg bg-white/5 group-hover:bg-primary text-[11px] font-medium text-gray-300 group-hover:text-white transition-colors">
-                    {item.media_type === 'book' ? 'Read' : item.media_type === 'movie' ? 'Watch' : 'Episodes'}
+                <div className="p-3 flex flex-col gap-1">
+                  <h3 className="font-display font-semibold text-sm text-on-surface truncate group-hover:text-primary transition-colors">
+                    {item.title}
+                  </h3>
+                  <div className="flex items-center justify-between text-xs text-on-surface-variant font-mono">
+                    <span>{item.year || '2024'}</span>
+                    <span className="text-[10px] uppercase font-bold text-tertiary">
+                      {item.provider_id === 'local-media' ? 'Local' : item.provider_id.toUpperCase()}
+                    </span>
                   </div>
                 </div>
               </div>
             ))}
           </div>
-        </div>
-      ) : query ? (
-        <div className="rounded-2xl glass-card p-12 text-center space-y-3">
-          <div className="w-12 h-12 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center mx-auto">
-            <Search className="w-5 h-5" />
-          </div>
-          <h3 className="text-base font-semibold text-white">No matches found for "{query}"</h3>
-          <p className="text-xs text-gray-400 max-w-sm mx-auto leading-relaxed">
-            Try checking spelling or adjusting the media category filter.
-          </p>
-        </div>
-      ) : (
-        <div className="rounded-2xl glass-card p-12 text-center space-y-4">
-          <div className="w-12 h-12 rounded-full bg-primary/10 border border-primary/20 text-primary flex items-center justify-center mx-auto">
-            <Search className="w-5 h-5" />
-          </div>
-          <div>
-            <h3 className="text-base font-semibold text-white">Universal Search Ready</h3>
-            <p className="text-xs text-gray-400 max-w-md mx-auto leading-relaxed mt-1">
-              Start typing above to search titles, genres, actors, and novels across all connected providers.
-            </p>
-          </div>
-
-          <div className="pt-2 flex flex-wrap items-center justify-center gap-2 text-xs">
-            <span className="text-gray-500">Popular queries:</span>
-            {['Cosmic Drift', 'Chronicles of Aetheria', 'Blade of the Celestial Wind', 'Dune'].map(tag => (
-              <button
-                key={tag}
-                onClick={() => setQuery(tag)}
-                className="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-gray-300 border border-white/5 text-[11px] transition-colors"
+        ) : (
+          /* List View */
+          <div className="flex flex-col gap-3">
+            {results.map((item) => (
+              <div
+                key={`${item.provider_id}-${item.provider_media_id}`}
+                onClick={() => handleActionClick(item)}
+                className="group flex items-center gap-4 p-3.5 rounded-xl bg-surface-container hover:bg-surface-container-high border border-border-subtle hover:border-primary/40 transition-all cursor-pointer card-hover-lift shadow-sm"
               >
-                {tag}
-              </button>
+                <div className="w-16 aspect-[2/3] shrink-0 rounded-lg overflow-hidden bg-surface-container-lowest">
+                  <img
+                    src={
+                      item.poster_url ||
+                      'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&q=80'
+                    }
+                    alt={item.title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                  />
+                </div>
+
+                <div className="flex-1 min-w-0 flex flex-col gap-1">
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-0.5 rounded bg-surface-container-high font-mono text-[10px] font-bold text-primary uppercase">
+                      {item.media_type}
+                    </span>
+                    <h3 className="font-display font-bold text-sm sm:text-base text-on-surface truncate group-hover:text-primary transition-colors">
+                      {item.title}
+                    </h3>
+                  </div>
+                  {item.overview && (
+                    <p className="font-sans text-xs text-on-surface-variant line-clamp-2 max-w-3xl leading-relaxed">
+                      {item.overview}
+                    </p>
+                  )}
+                  <div className="flex items-center gap-3 font-mono text-xs text-on-surface-variant pt-1">
+                    <span>{item.year || 2024}</span>
+                    {item.rating && (
+                      <span className="flex items-center gap-1 text-secondary font-bold">
+                        <Star className="w-3 h-3 fill-secondary" />
+                        {item.rating.toFixed(1)}
+                      </span>
+                    )}
+                    <span className="text-[10px] text-tertiary uppercase font-bold">
+                      {item.provider_id}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="shrink-0 pr-2">
+                  <button
+                    className="p-2.5 rounded-lg bg-surface-container-high hover:bg-primary hover:text-on-primary text-on-surface transition-colors"
+                    type="button"
+                  >
+                    {item.media_type === 'book' ? <BookOpen className="w-4 h-4" /> : <Play className="w-4 h-4 fill-current" />}
+                  </button>
+                </div>
+              </div>
             ))}
           </div>
-        </div>
-      )}
+        )}
+      </section>
 
-      {/* Video Player Modal */}
+      {/* Players & Modals */}
       {activeVideo && (
         <VideoPlayer
-          playbackData={activeVideo.data}
+          playback={activeVideo.data}
           title={activeVideo.title}
           episodeTitle={activeVideo.episodeTitle}
           onClose={() => setActiveVideo(null)}
         />
       )}
 
-      {/* Series Episodes Modal */}
       {selectedSeries && (
         <SeriesDetailModal
-          series={selectedSeries}
+          details={selectedSeries}
           onClose={() => setSelectedSeries(null)}
-          onPlayEpisode={handlePlayEpisodeFromModal}
+          onPlayEpisode={(epNumber, seasonNum, epTitle) => {
+            handleActionClick({
+              provider_id: selectedSeries.provider_id,
+              provider_media_id: selectedSeries.provider_media_id,
+              title: `${selectedSeries.title} - S${seasonNum}E${epNumber}${epTitle ? `: ${epTitle}` : ''}`,
+              media_type: 'movie',
+            });
+          }}
+
         />
       )}
 
-      {/* Book Reader Modal */}
       {activeBook && (
-        <BookReader
-          book={activeBook}
-          onClose={() => setActiveBook(null)}
-        />
+        <BookReader content={activeBook} onClose={() => setActiveBook(null)} />
       )}
     </div>
   );

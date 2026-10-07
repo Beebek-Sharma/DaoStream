@@ -3,12 +3,13 @@ import {
   Play,
   Star,
   Info,
-  Clock,
-  BookOpen,
-  Film,
-  Tv,
   Bookmark,
+  Check,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
+
+
 import {
   searchMedia,
   fetchMediaDetails,
@@ -16,6 +17,9 @@ import {
   resolvePlayback,
   fetchWatchProgress,
   fetchReadingProgress,
+  addToWatchlist,
+  removeFromWatchlist,
+  fetchWatchlist,
   MediaItem,
   MediaDetails,
   BookContent,
@@ -29,587 +33,754 @@ export const HomePage: React.FC = () => {
   const [featuredItem, setFeaturedItem] = useState<MediaItem | null>(null);
   const [trendingMovies, setTrendingMovies] = useState<MediaItem[]>([]);
   const [popularSeries, setPopularSeries] = useState<MediaItem[]>([]);
-  const [featuredBooks, setFeaturedBooks] = useState<MediaItem[]>([]);
+  const [popularAnime, setPopularAnime] = useState<MediaItem[]>([]);
   const [continueWatchingList, setContinueWatchingList] = useState<any[]>([]);
   const [continueReadingList, setContinueReadingList] = useState<any[]>([]);
-
+  const [watchlistIds, setWatchlistIds] = useState<Set<string>>(new Set());
 
   // Active Modals & Players
   const [activeVideo, setActiveVideo] = useState<{
     data: ResolvedPlayback;
     title: string;
     episodeTitle?: string;
+    mediaId?: string;
   } | null>(null);
   const [selectedSeries, setSelectedSeries] = useState<MediaDetails | null>(null);
   const [activeBook, setActiveBook] = useState<BookContent | null>(null);
 
   useEffect(() => {
+    let mounted = true;
+
     const loadHomeData = async () => {
       try {
-        const [movies, series, anime, books, watchProg, readProg] = await Promise.allSettled([
-          searchMedia('', 'movie'),
-          searchMedia('', 'series'),
-          searchMedia('', 'anime'),
-          searchMedia('', 'book'),
-          fetchWatchProgress(),
-          fetchReadingProgress(),
-        ]);
+        const [moviesRes, seriesRes, animeRes, booksRes, watchProgRes, readProgRes, watchListRes] =
+          await Promise.allSettled([
+            searchMedia('', 'movie'),
+            searchMedia('', 'series'),
+            searchMedia('', 'anime'),
+            searchMedia('', 'book'),
+            fetchWatchProgress(),
+            fetchReadingProgress(),
+            fetchWatchlist(),
+          ]);
 
-        const mList = movies.status === 'fulfilled' && movies.value.length > 0 ? movies.value : [
-          {
-            provider_id: 'mock_media_provider',
-            provider_media_id: 'mock-m-1',
-            title: 'Cosmic Drift',
-            media_type: 'movie' as const,
-            year: 2024,
-            overview: 'A lone interstellar navigator finds themselves lost in an uncharted gravitational fold.',
-            poster_url: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&q=80',
-            backdrop_url: 'https://images.unsplash.com/photo-1506703719100-a0f3a48c0f86?w=1280&q=80',
-            rating: 8.7,
-          },
-          {
-            provider_id: 'mock_media_provider',
-            provider_media_id: 'mock-m-2',
-            title: 'Neon Symphony',
-            media_type: 'movie' as const,
-            year: 2023,
-            overview: 'In a rain-drenched cyberpunk metropolis, a renegade acoustic hacker uncovers a corporate conspiracy.',
-            poster_url: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=600&q=80',
-            backdrop_url: 'https://images.unsplash.com/photo-1514565131-fce0801e5785?w=1280&q=80',
-            rating: 8.4,
-          },
-        ];
+        if (!mounted) return;
 
-        const sList = series.status === 'fulfilled' && series.value.length > 0 ? series.value : [
-          {
-            provider_id: 'mock_media_provider',
-            provider_media_id: 'mock-s-1',
-            title: 'Chronicles of Aetheria',
-            media_type: 'series' as const,
-            year: 2022,
-            overview: 'Ancient elemental dynasties clash across floating islands as energy crystals deplete.',
-            poster_url: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=600&q=80',
-            backdrop_url: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=1280&q=80',
-            rating: 9.1,
-          },
-        ];
+        const movies: MediaItem[] =
+          moviesRes.status === 'fulfilled' && moviesRes.value.length > 0
+            ? moviesRes.value
+            : [
+                {
+                  provider_id: 'local-media',
+                  provider_media_id: 'mock-m-1',
+                  title: 'Dune: Prophecy',
+                  media_type: 'movie',
+                  year: 2024,
+                  overview:
+                    'Ten thousand years before the ascension of Paul Atreides, two Harkonnen sisters combat forces that threaten the destiny of humankind and establish the fabled sect known as the Bene Gesserit.',
+                  poster_url:
+                    'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&q=80',
+                  backdrop_url:
+                    'https://images.unsplash.com/photo-1506703719100-a0f3a48c0f86?w=1280&q=80',
+                  rating: 9.1,
+                },
+                {
+                  provider_id: 'tmdb',
+                  provider_media_id: 'mock-m-2',
+                  title: 'Cyberpunk: Neon Symphony',
+                  media_type: 'movie',
+                  year: 2023,
+                  overview:
+                    'In a rain-drenched cyberpunk metropolis, a renegade acoustic hacker uncovers an encrypted cognitive surveillance conspiracy deep within the megastructure core.',
+                  poster_url:
+                    'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=600&q=80',
+                  backdrop_url:
+                    'https://images.unsplash.com/photo-1514565131-fce0801e5785?w=1280&q=80',
+                  rating: 8.7,
+                },
+                {
+                  provider_id: 'local-media',
+                  provider_media_id: 'mock-m-3',
+                  title: 'Severance: Terminal Descent',
+                  media_type: 'movie',
+                  year: 2024,
+                  overview:
+                    'Employees discover anomalous data packets in the macrodata refinement wing triggering a high-stakes protocol lockdown.',
+                  poster_url:
+                    'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=600&q=80',
+                  backdrop_url:
+                    'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1280&q=80',
+                  rating: 9.0,
+                },
+              ];
 
-        const aList = anime.status === 'fulfilled' && anime.value.length > 0 ? anime.value : [
-          {
-            provider_id: 'mock_media_provider',
-            provider_media_id: 'mock-a-1',
-            title: 'Blade of the Celestial Wind',
-            media_type: 'anime' as const,
-            year: 2023,
-            overview: 'A spirit swordsman traverses mystical realms to seal rifts between realms of gods and men.',
-            poster_url: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=600&q=80',
-            backdrop_url: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=1280&q=80',
-            rating: 8.9,
-          },
-        ];
+        const series: MediaItem[] =
+          seriesRes.status === 'fulfilled' && seriesRes.value.length > 0
+            ? seriesRes.value
+            : [
+                {
+                  provider_id: 'local-media',
+                  provider_media_id: 'mock-s-1',
+                  title: 'Chronicles of Aetheria',
+                  media_type: 'series',
+                  year: 2023,
+                  overview:
+                    'Ancient elemental dynasties clash across floating islands as energy crystals deplete and sky-ships patrol the outer void.',
+                  poster_url:
+                    'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=600&q=80',
+                  backdrop_url:
+                    'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=1280&q=80',
+                  rating: 8.9,
+                },
+                {
+                  provider_id: 'tmdb',
+                  provider_media_id: 'mock-s-2',
+                  title: 'Severance',
+                  media_type: 'series',
+                  year: 2024,
+                  overview:
+                    'Mark leads a team of office workers whose memories have been surgically divided between their work and personal lives.',
+                  poster_url:
+                    'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=600&q=80',
+                  backdrop_url:
+                    'https://images.unsplash.com/photo-1506703719100-a0f3a48c0f86?w=1280&q=80',
+                  rating: 9.0,
+                },
+              ];
 
-        const bList = books.status === 'fulfilled' && books.value.length > 0 ? books.value : [
-          {
-            provider_id: 'mock_media_provider',
-            provider_media_id: 'mock-b-1',
-            title: 'The Quantum Cartographer',
-            media_type: 'book' as const,
-            year: 2021,
-            overview: 'A profound journey through multidimensional topologies and forgotten algorithms.',
-            poster_url: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&q=80',
-            rating: 9.3,
-          },
-        ];
+        const anime: MediaItem[] =
+          animeRes.status === 'fulfilled' && animeRes.value.length > 0
+            ? animeRes.value
+            : [
+                {
+                  provider_id: 'local-media',
+                  provider_media_id: 'mock-a-1',
+                  title: 'Blade of the Celestial Wind',
+                  media_type: 'anime',
+                  year: 2023,
+                  overview:
+                    'A spirit swordsman traverses mystical realms to seal rifts between realms of gods and men.',
+                  poster_url:
+                    'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=600&q=80',
+                  backdrop_url:
+                    'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=1280&q=80',
+                  rating: 8.9,
+                },
+              ];
 
-        setTrendingMovies(mList);
-        setPopularSeries([...sList, ...aList]);
-        setFeaturedBooks(bList);
-        setFeaturedItem(mList[0] || sList[0]);
+        const books: MediaItem[] =
+          booksRes.status === 'fulfilled' && booksRes.value.length > 0
+            ? booksRes.value
+            : [
+                {
+                  provider_id: 'openlibrary',
+                  provider_media_id: 'mock-b-1',
+                  title: 'The Quantum Cartographer',
+                  media_type: 'book',
+                  year: 2021,
+                  overview:
+                    'A profound journey through multidimensional topologies and forgotten cryptographic algorithms.',
+                  poster_url:
+                    'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&q=80',
+                  backdrop_url:
+                    'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1280&q=80',
+                  rating: 9.3,
+                },
+                {
+                  provider_id: 'local-media',
+                  provider_media_id: 'mock-b-2',
+                  title: 'Project Hail Mary',
+                  media_type: 'book',
+                  year: 2022,
+                  overview:
+                    'Ryland Grace is the sole survivor on a desperate last-chance mission—and if he fails, humanity and the earth itself will perish.',
+                  poster_url:
+                    'https://images.unsplash.com/photo-1512820790803-83ca734da794?w=600&q=80',
+                  backdrop_url:
+                    'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1280&q=80',
+                  rating: 9.5,
+                },
+              ];
 
-        // Continue watching/reading lists
-        if (watchProg.status === 'fulfilled' && watchProg.value.length > 0) {
-          setContinueWatchingList(watchProg.value);
+        setTrendingMovies(movies);
+        setPopularSeries(series);
+        setPopularAnime(anime);
+        setFeaturedItem(movies[0] || series[0] || null);
+
+        // Continue watching fallback/real items
+        if (watchProgRes.status === 'fulfilled' && watchProgRes.value.length > 0) {
+          setContinueWatchingList(watchProgRes.value);
         } else {
-          // Sample continue watching entry
           setContinueWatchingList([
             {
-              media_id: 'mock-m-1',
-              title: 'Cosmic Drift',
-              current_time: 2840,
-              duration: 8520,
-              progress_percent: 33,
-              poster_url: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&q=80',
+              id: 'cw-1',
+              title: 'Cyberpunk: Edgerunners',
+              episode_code: 'S01:E04',
+              time_remaining: '18m remaining',
+              progress_pct: 68,
+              thumbnail_url:
+                'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=600&q=80',
+              media_type: 'anime',
+              provider_media_id: 'mock-a-1',
+            },
+            {
+              id: 'cw-2',
+              title: 'Dune: Prophecy',
+              episode_code: 'S01:E03',
+              time_remaining: '42m remaining',
+              progress_pct: 45,
+              thumbnail_url:
+                'https://images.unsplash.com/photo-1506703719100-a0f3a48c0f86?w=600&q=80',
+              media_type: 'series',
+              provider_media_id: 'mock-s-1',
             },
           ]);
         }
 
-        if (readProg.status === 'fulfilled' && readProg.value.length > 0) {
-          setContinueReadingList(readProg.value);
+        // Continue reading fallback/real items
+        if (readProgRes.status === 'fulfilled' && readProgRes.value.length > 0) {
+          setContinueReadingList(readProgRes.value);
         } else {
-          // Sample continue reading entry
-          setContinueReadingList([
-            {
-              media_id: 'mock-b-1',
-              title: 'The Quantum Cartographer',
-              current_page: 1,
-              total_pages: 2,
-              progress_percentage: 50,
-              last_location: 'Chapter 1: The Threshold of Coordinates',
-            },
-          ]);
+          setContinueReadingList(
+            books.map((b, idx) => ({
+              id: b.provider_media_id || `cr-${idx + 1}`,
+              title: b.title,
+              author: b.overview?.split('.')[0] || 'Andy Weir',
+              chapter_label: `CH. ${idx + 1} / Origin Coordinates`,
+              progress_pct: 45 + idx * 10,
+              page_info: `Page ${120 + idx * 60} of 420`,
+              cover_url:
+                b.poster_url ||
+                'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&q=80',
+              provider_media_id: b.provider_media_id,
+            }))
+          );
+        }
+
+
+        if (watchListRes.status === 'fulfilled') {
+          const ids = new Set<string>(watchListRes.value.map((item: any) => item.media_id));
+          setWatchlistIds(ids);
         }
       } catch (err) {
-        console.warn('Error loading home data:', err);
+        console.error('Error loading home data:', err);
       }
     };
 
+
     loadHomeData();
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
-  const handlePlayHero = async (item: MediaItem) => {
+  const handlePlayMedia = async (mediaId: string, mediaType: string, title: string) => {
     try {
-      const playback = await resolvePlayback(item.provider_media_id, item.media_type);
-      setActiveVideo({ data: playback, title: item.title });
-    } catch (err) {
-      console.warn('Hero fallback playback:', err);
+      const resolved = await resolvePlayback(mediaId, mediaType);
       setActiveVideo({
-        data: {
-          media_id: item.provider_media_id,
-          media_type: item.media_type,
-          primary_source: {
-            id: `${item.provider_media_id}-source-1080p`,
-            title: 'Authorized Demo Source (1080p)',
-            quality: '1080p',
-            format: 'mp4',
-            url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
-            is_direct: true,
-            subtitles: [],
-          },
-          sources: [
-            {
-              id: `${item.provider_media_id}-source-1080p`,
-              title: 'Authorized Demo Source (1080p)',
-              quality: '1080p',
-              format: 'mp4',
-              url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
-              is_direct: true,
-              subtitles: [],
-            },
-          ],
-          available_qualities: ['1080p'],
-          subtitles: [],
-          expires_in_seconds: 7200,
-        },
-        title: item.title,
+        data: resolved,
+        title,
+        mediaId,
       });
-    }
-  };
-
-  const handleMediaCardClick = async (item: MediaItem) => {
-    if (item.media_type === 'movie') {
-      await handlePlayHero(item);
-    } else if (item.media_type === 'series' || item.media_type === 'anime') {
-      try {
-        const details = await fetchMediaDetails(item.provider_media_id, item.media_type);
-        setSelectedSeries(details);
-      } catch (err) {
-        console.warn('Series fallback details:', err);
-      }
-    } else if (item.media_type === 'book') {
-      try {
-        const content = await fetchBookContent(item.provider_media_id);
-        setActiveBook(content);
-      } catch (err) {
-        console.warn('Book fallback content:', err);
-      }
-    }
-  };
-
-  const handleResumeWatching = async (entry: any) => {
-    try {
-      const playback = await resolvePlayback(entry.media_id, 'movie');
-      setActiveVideo({ data: playback, title: entry.title });
     } catch (err) {
-      console.warn('Fallback resume:', err);
-      setActiveVideo({
-        data: {
-          media_id: entry.media_id,
-          media_type: 'movie',
-          primary_source: {
-            id: `${entry.media_id}-source-1080p`,
-            title: 'Authorized Demo Source (1080p)',
-            quality: '1080p',
-            format: 'mp4',
-            url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
-            is_direct: true,
-            subtitles: [],
-          },
-          sources: [],
-          available_qualities: ['1080p'],
-          subtitles: [],
-          expires_in_seconds: 7200,
-        },
-        title: entry.title,
-      });
+      console.error('Failed to resolve stream:', err);
     }
   };
 
-  const handleResumeReading = async (entry: any) => {
+  const handleOpenDetails = async (mediaId: string, mediaType: string) => {
     try {
-      const content = await fetchBookContent(entry.media_id);
+      const details = await fetchMediaDetails(mediaId, mediaType);
+      setSelectedSeries(details);
+    } catch (err) {
+      console.error('Failed to fetch details:', err);
+    }
+  };
+
+  const handleOpenBook = async (bookId: string) => {
+    try {
+      const content = await fetchBookContent(bookId);
       setActiveBook(content);
     } catch (err) {
-      console.warn('Fallback resume reading:', err);
+      console.error('Failed to load book:', err);
+    }
+  };
+
+  const toggleWatchlist = async (mediaId: string) => {
+    try {
+      if (watchlistIds.has(mediaId)) {
+        await removeFromWatchlist(mediaId);
+        setWatchlistIds((prev) => {
+          const next = new Set(prev);
+          next.delete(mediaId);
+          return next;
+        });
+      } else {
+        await addToWatchlist(mediaId);
+        setWatchlistIds((prev) => new Set(prev).add(mediaId));
+      }
+    } catch (err) {
+      console.error('Failed to toggle watchlist:', err);
     }
   };
 
   return (
-    <div className="space-y-10 animate-fade-in pb-16">
-      {/* Featured Cinematic Hero Banner */}
-      {featuredItem && (
-        <div className="relative rounded-3xl overflow-hidden border border-white/10 shadow-cinematic bg-background-elevated min-h-[380px] sm:min-h-[440px] flex items-end p-6 sm:p-12">
-          {/* Backdrop Image */}
-          <div className="absolute inset-0">
-            <img
-              src={
-                featuredItem.backdrop_url ||
-                featuredItem.poster_url ||
-                'https://images.unsplash.com/photo-1506703719100-a0f3a48c0f86?w=1280&q=80'
-              }
-              alt={featuredItem.title}
-              className="w-full h-full object-cover object-center transform scale-105 filter brightness-75 transition-transform duration-1000"
-            />
-            {/* Ambient gradients */}
-            <div className="absolute inset-0 bg-gradient-to-t from-background-card via-background-card/60 to-transparent" />
-            <div className="absolute inset-0 bg-gradient-to-r from-background-card via-background-card/40 to-transparent" />
-          </div>
+    <div className="relative flex flex-col w-full -mx-4 sm:-mx-6 lg:-mx-8">
+      {/* Dynamic Atmospheric Ambient Glow Orbs */}
+      <div
+        className="pointer-events-none absolute -top-32 left-1/4 w-[700px] h-[450px] rounded-full blur-[140px] mix-blend-screen opacity-70"
+        style={{ backgroundColor: 'rgba(13, 161, 186, 0.12)' }}
+      />
+      <div
+        className="pointer-events-none absolute top-48 right-12 w-[500px] h-[350px] rounded-full blur-[120px] mix-blend-screen opacity-60"
+        style={{ backgroundColor: 'rgba(97, 214, 240, 0.08)' }}
+      />
 
-          {/* Hero Content */}
-          <div className="relative z-10 max-w-2xl space-y-4">
-            <div className="flex items-center gap-2">
-              <span className="px-2.5 py-0.5 rounded-full bg-primary/30 border border-primary/50 text-[11px] font-mono uppercase text-indigo-300 font-semibold backdrop-blur-md">
-                Featured {featuredItem.media_type}
+      {/* 1. TOP HERO SHOWCASE: Bleeds gracefully with ambient scrims */}
+      {featuredItem && (
+        <section className="relative w-full -mt-6 sm:-mt-8 pt-8 sm:pt-12 pb-10 sm:pb-14 px-6 sm:px-10 lg:px-12 flex flex-col justify-end min-h-[580px] lg:min-h-[640px] overflow-hidden shadow-2xl border-b border-border-subtle">
+          {/* Backdrop Photography */}
+          <div
+            className="absolute inset-0 bg-cover bg-center -z-10 scale-105 transform hover:scale-100 transition-transform duration-1000 ease-out"
+            style={{
+              backgroundImage: `url(${
+                featuredItem.backdrop_url ||
+                'https://images.unsplash.com/photo-1506703719100-a0f3a48c0f86?w=1280&q=80'
+              })`,
+            }}
+          />
+
+          {/* Scrim Overlays for High-Contrast Architectural Legibility */}
+          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/75 to-background/20 -z-10" />
+          <div className="absolute inset-0 bg-gradient-to-r from-background via-background/70 to-transparent -z-10 w-full lg:w-4/5" />
+
+          {/* Hero Content Hierarchy */}
+          <div className="max-w-4xl flex flex-col gap-4 z-10 pt-16">
+            {/* Metadata Badges Row */}
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center gap-1 bg-surface-container-high px-3 py-0.5 rounded-full font-mono text-xs text-secondary font-bold uppercase tracking-wider">
+                <Star className="w-3.5 h-3.5 fill-secondary text-secondary" />
+                {featuredItem.rating ? `${featuredItem.rating.toFixed(1)} IMDb` : '9.1 IMDb'}
               </span>
-              {featuredItem.rating && (
-                <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-black/60 border border-white/10 text-[11px] font-semibold text-amber-400 backdrop-blur-md">
-                  <Star className="w-3 h-3 fill-amber-400" />
-                  <span>{featuredItem.rating}</span>
-                </span>
-              )}
+              <span className="inline-flex items-center bg-surface-container-high/90 px-3 py-0.5 rounded-full font-mono text-xs text-tertiary font-medium">
+                4K UHD • HDR10+
+              </span>
+              <span className="inline-flex items-center bg-surface-container-high/90 px-3 py-0.5 rounded-full font-mono text-xs text-on-surface-variant font-medium">
+                Dolby Atmos 7.1.4
+              </span>
+              <span className="inline-flex items-center bg-surface-container-high/90 px-3 py-0.5 rounded-full font-sans text-xs text-on-surface uppercase font-semibold">
+                Sci-Fi / Drama
+              </span>
+              <span className="inline-flex items-center gap-1.5 bg-primary/15 border border-primary/30 px-3 py-0.5 rounded-full font-mono text-xs text-primary font-medium">
+                <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                Local NAS (Direct Play 4K)
+              </span>
             </div>
 
-            <h1 className="text-3xl sm:text-5xl font-extrabold text-white tracking-tight leading-tight">
-              {featuredItem.title}
-            </h1>
+            {/* Title & Logline */}
+            <div className="flex flex-col gap-1.5">
+              <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-widest text-secondary font-bold">
+                <span>Vault Premier Exclusive</span>
+                <span className="text-outline-variant">•</span>
+                <span className="text-on-surface-variant">{featuredItem.year || 2024}</span>
+              </div>
+              <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl text-on-surface tracking-tight font-extrabold leading-tight">
+                {featuredItem.title}
+              </h1>
+              <p className="font-sans text-base sm:text-lg text-on-surface-variant max-w-2xl line-clamp-2 leading-relaxed">
+                {featuredItem.overview}
+              </p>
+            </div>
 
-            <p className="text-xs sm:text-sm text-gray-200 line-clamp-3 leading-relaxed max-w-xl">
-              {featuredItem.overview}
-            </p>
-
-            <div className="pt-2 flex flex-wrap items-center gap-3">
+            {/* Playback Actions Row */}
+            <div className="flex flex-wrap items-center gap-3 pt-2">
               <button
-                onClick={() => handlePlayHero(featuredItem)}
-                className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-primary hover:bg-primary-hover text-white text-sm font-semibold transition-all shadow-glow-primary hover:translate-y-[-1px]"
+                onClick={() =>
+                  handlePlayMedia(
+                    featuredItem.provider_media_id,
+                    featuredItem.media_type,
+                    featuredItem.title
+                  )
+                }
+                className="group flex items-center gap-3 bg-primary hover:bg-primary-hover text-on-primary px-6 py-2.5 rounded-lg transition-all shadow-glow-primary active:scale-95 font-bold cursor-pointer"
+                type="button"
               >
-                <Play className="w-4 h-4 fill-white ml-0.5" />
-                <span>Play Now</span>
+                <Play className="w-5 h-5 fill-current group-hover:scale-110 transition-transform" />
+                <div className="flex flex-col text-left">
+                  <span className="font-display text-sm leading-none font-bold">
+                    Resume S1:E3
+                  </span>
+                  <span className="font-mono text-[10px] opacity-80 mt-0.5 font-medium">
+                    42m remaining of 1h 08m
+                  </span>
+                </div>
               </button>
 
               <button
-                onClick={() => handleMediaCardClick(featuredItem)}
-                className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/10 text-white text-sm font-medium backdrop-blur-md transition-colors"
+                onClick={() => toggleWatchlist(featuredItem.provider_media_id)}
+                className="flex items-center gap-2 bg-surface-container-high/80 hover:bg-surface-bright backdrop-blur-md px-4 py-2.5 rounded-lg text-on-surface transition-colors shadow-sm cursor-pointer"
+                type="button"
+              >
+                {watchlistIds.has(featuredItem.provider_media_id) ? (
+                  <>
+                    <Check className="w-4 h-4 text-tertiary" />
+                    <span className="font-sans text-sm font-medium">In Watchlist</span>
+                  </>
+                ) : (
+                  <>
+                    <Bookmark className="w-4 h-4" />
+                    <span className="font-sans text-sm font-medium">Watchlist</span>
+                  </>
+                )}
+              </button>
+
+              <button
+                onClick={() =>
+                  handleOpenDetails(featuredItem.provider_media_id, featuredItem.media_type)
+                }
+                className="flex items-center gap-2 bg-surface-container-high/80 hover:bg-surface-bright backdrop-blur-md px-4 py-2.5 rounded-lg text-on-surface transition-colors shadow-sm cursor-pointer"
+                type="button"
               >
                 <Info className="w-4 h-4" />
-                <span>More Info</span>
+                <span className="font-sans text-sm font-medium">Details & Seasons</span>
               </button>
+
+              {/* Quick Keyboard Shortcut Hint */}
+              <div className="hidden lg:flex items-center gap-2 pl-4 text-on-surface-variant font-mono text-xs">
+                <kbd className="px-2 py-0.5 bg-surface-container rounded text-primary border border-border-subtle">
+                  Space
+                </kbd>
+                <span>Quick Resume</span>
+              </div>
             </div>
           </div>
-        </div>
+        </section>
       )}
 
-      {/* Continue Watching Row */}
-      {continueWatchingList.length > 0 && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Clock className="w-4 h-4 text-indigo-400" />
-              <h2 className="text-lg font-bold text-white tracking-tight">Continue Watching</h2>
+      {/* Content Section Container */}
+      <div className="flex flex-col gap-10 sm:gap-12 px-6 sm:px-10 lg:px-12 py-10">
+        {/* 2. CONTINUE WATCHING RAIL (16:9 Aspect Video Cards) */}
+        {continueWatchingList.length > 0 && (
+          <section className="flex flex-col gap-4">
+            <div className="flex items-end justify-between">
+              <div className="flex flex-col">
+                <span className="font-mono text-xs uppercase text-secondary tracking-wider font-bold">
+                  Active Playback Stream
+                </span>
+                <h2 className="font-display text-2xl text-on-surface font-bold tracking-tight">
+                  Continue Watching
+                </h2>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  className="p-2 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-colors"
+                  type="button"
+                  aria-label="Previous watching items"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <button
+                  className="p-2 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-colors"
+                  type="button"
+                  aria-label="Next watching items"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
             </div>
-          </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {continueWatchingList.map((entry, idx) => (
-              <div
-                key={idx}
-                onClick={() => handleResumeWatching(entry)}
-                className="group relative rounded-2xl glass-card border border-white/5 hover:border-primary/40 overflow-hidden cursor-pointer transition-all hover:translate-y-[-2px] p-3 flex items-center gap-3.5"
-              >
-                <div className="w-16 aspect-[2/3] rounded-xl overflow-hidden bg-background-elevated relative flex-shrink-0">
-                  <img
-                    src={entry.poster_url || 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&q=80'}
-                    alt={entry.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                  />
-                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Play className="w-5 h-5 fill-white text-white" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+              {continueWatchingList.map((item) => (
+                <div
+                  key={item.id}
+                  onClick={() =>
+                    handlePlayMedia(
+                      item.provider_media_id || 'mock-m-1',
+                      item.media_type || 'series',
+                      item.title
+                    )
+                  }
+                  className="group flex flex-col bg-surface-container rounded-xl overflow-hidden border border-border-subtle hover:border-primary/40 transition-all duration-200 cursor-pointer card-hover-lift shadow-md"
+                >
+                  <div className="relative aspect-video w-full overflow-hidden bg-surface-container-lowest">
+                    <img
+                      src={
+                        item.thumbnail_url ||
+                        'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=600&q=80'
+                      }
+                      alt={item.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-transparent to-black/20" />
+
+                    {/* Season / Episode Chip */}
+                    <div className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded bg-surface-container-high/90 backdrop-blur-md text-[11px] font-mono font-bold text-on-surface">
+                      {item.episode_code || 'S01:E01'}
+                    </div>
+
+                    {/* Play Button Overlay */}
+                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/30">
+                      <div className="w-10 h-10 rounded-full bg-primary text-on-primary flex items-center justify-center shadow-glow-primary">
+                        <Play className="w-5 h-5 fill-current ml-0.5" />
+                      </div>
+                    </div>
+
+                    {/* Active Progress Bar */}
+                    <div className="absolute bottom-0 left-0 right-0 h-1 bg-surface-container-high">
+                      <div
+                        className="h-full bg-primary transition-all duration-300"
+                        style={{ width: `${item.progress_pct || 50}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="p-3.5 flex flex-col gap-1">
+                    <span className="font-display font-semibold text-sm text-on-surface truncate group-hover:text-primary transition-colors">
+                      {item.title}
+                    </span>
+                    <span className="font-mono text-xs text-on-surface-variant flex items-center justify-between">
+                      <span>{item.time_remaining || '35m remaining'}</span>
+                      <span className="text-tertiary font-medium">
+                        {item.progress_pct || 50}%
+                      </span>
+                    </span>
                   </div>
                 </div>
+              ))}
+            </div>
+          </section>
+        )}
 
-                <div className="flex-1 min-w-0 space-y-1.5">
-                  <h3 className="text-xs font-semibold text-white truncate group-hover:text-primary transition-colors">
-                    {entry.title}
-                  </h3>
-                  <div className="flex items-center gap-2 text-[10px] text-gray-400">
-                    <span>{entry.progress_percent || 33}% watched</span>
-                  </div>
-                  {/* Progress Bar */}
-                  <div className="w-full bg-white/10 rounded-full h-1.5 overflow-hidden">
-                    <div
-                      className="bg-primary h-full rounded-full"
-                      style={{ width: `${entry.progress_percent || 33}%` }}
+        {/* 3. CONTINUE READING / LITERATURE VAULT RAIL (1:1.5 Aspect Book Covers) */}
+        {continueReadingList.length > 0 && (
+          <section className="flex flex-col gap-4">
+            <div className="flex items-end justify-between">
+              <div className="flex flex-col">
+                <span className="font-mono text-xs uppercase text-tertiary tracking-wider font-bold">
+                  Interactive Literature Vault
+                </span>
+                <h2 className="font-display text-2xl text-on-surface font-bold tracking-tight">
+                  Continue Reading
+                </h2>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+              {continueReadingList.map((book) => (
+                <div
+                  key={book.id}
+                  onClick={() => handleOpenBook(book.provider_media_id || 'mock-b-1')}
+                  className="group flex bg-surface-container rounded-xl overflow-hidden border border-border-subtle hover:border-tertiary/40 transition-all duration-200 cursor-pointer card-hover-lift p-3 gap-3.5 items-center shadow-md"
+                >
+                  <div className="relative w-20 aspect-[2/3] shrink-0 overflow-hidden rounded-lg bg-surface-container-lowest">
+                    <img
+                      src={
+                        book.cover_url ||
+                        'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&q=80'
+                      }
+                      alt={book.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
                   </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
-      {/* Continue Reading Row */}
-      {continueReadingList.length > 0 && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <BookOpen className="w-4 h-4 text-emerald-400" />
-              <h2 className="text-lg font-bold text-white tracking-tight">Continue Reading</h2>
+                  <div className="flex-1 flex flex-col justify-between h-full min-w-0">
+                    <div className="flex flex-col gap-1">
+                      <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-tertiary/15 text-tertiary w-fit">
+                        {book.progress_pct || 50}% READ
+                      </span>
+                      <h4 className="font-display font-semibold text-sm text-on-surface truncate group-hover:text-tertiary transition-colors">
+                        {book.title}
+                      </h4>
+                      <p className="font-sans text-xs text-on-surface-variant truncate">
+                        {book.author}
+                      </p>
+                    </div>
+
+                    <div className="flex flex-col gap-1.5 pt-2 border-t border-border-subtle mt-2">
+                      <span className="font-mono text-[11px] text-secondary truncate">
+                        {book.chapter_label || 'Chapter 18'}
+                      </span>
+                      <span className="font-mono text-[10px] text-on-surface-variant">
+                        {book.page_info || 'Page 248 of 496'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* 4. THEMATIC DISCOVERY RAILS: MOVIES */}
+        <section className="flex flex-col gap-4">
+          <div className="flex items-end justify-between">
+            <div className="flex flex-col">
+              <span className="font-mono text-xs uppercase text-primary tracking-wider font-bold">
+                Theatrical & Local Library
+              </span>
+              <h2 className="font-display text-2xl text-on-surface font-bold tracking-tight">
+                Featured Movies
+              </h2>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-            {continueReadingList.map((entry, idx) => (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
+            {trendingMovies.map((movie) => (
               <div
-                key={idx}
-                onClick={() => handleResumeReading(entry)}
-                className="group relative rounded-2xl glass-card border border-white/5 hover:border-emerald-500/40 p-4 cursor-pointer transition-all hover:translate-y-[-2px] flex items-center justify-between"
+                key={movie.provider_media_id}
+                onClick={() =>
+                  handlePlayMedia(movie.provider_media_id, movie.media_type, movie.title)
+                }
+                className="group flex flex-col bg-surface-container rounded-xl overflow-hidden border border-border-subtle hover:border-primary/40 transition-all duration-200 cursor-pointer card-hover-lift shadow-md"
               >
-                <div className="space-y-1 min-w-0 flex-1 pr-3">
-                  <span className="text-[10px] uppercase font-mono text-emerald-400 font-semibold">
-                    Current Book
-                  </span>
-                  <h3 className="text-xs font-semibold text-white truncate group-hover:text-emerald-300 transition-colors">
-                    {entry.title}
-                  </h3>
-                  <p className="text-[11px] text-gray-400 truncate">
-                    {entry.last_location || 'Chapter 1'}
-                  </p>
-                </div>
+                <div className="relative aspect-[2/3] w-full overflow-hidden bg-surface-container-lowest">
+                  <img
+                    src={
+                      movie.poster_url ||
+                      'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&q=80'
+                    }
+                    alt={movie.title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-transparent to-transparent opacity-80" />
 
-                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center flex-shrink-0 group-hover:bg-emerald-500 group-hover:text-white transition-all shadow-md">
-                  <Bookmark className="w-4 h-4 fill-current" />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+                  {/* Rating Badge */}
+                  {movie.rating && (
+                    <div className="absolute top-2 left-2 flex items-center gap-1 bg-surface-container-high/90 backdrop-blur-md px-2 py-0.5 rounded text-[11px] font-mono font-bold text-secondary">
+                      <Star className="w-3 h-3 fill-secondary text-secondary" />
+                      {movie.rating.toFixed(1)}
+                    </div>
+                  )}
 
-      {/* Trending Movies Row */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Film className="w-4 h-4 text-blue-400" />
-            <h2 className="text-lg font-bold text-white tracking-tight">Trending Feature Films</h2>
-          </div>
-        </div>
+                  {/* Quality Pill */}
+                  <div className="absolute top-2 right-2 bg-surface-container-highest/90 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold text-primary">
+                    4K
+                  </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5">
-          {trendingMovies.map(movie => (
-            <div
-              key={movie.provider_media_id}
-              onClick={() => handleMediaCardClick(movie)}
-              className="group relative rounded-2xl overflow-hidden glass-card border border-white/5 hover:border-white/20 transition-all duration-300 hover:shadow-cinematic hover:translate-y-[-2px] flex flex-col cursor-pointer"
-            >
-              <div className="aspect-[2/3] relative overflow-hidden bg-background-elevated">
-                <img
-                  src={movie.poster_url || 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&q=80'}
-                  alt={movie.title}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                />
-
-                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                  <div className="w-12 h-12 rounded-full bg-primary hover:bg-primary-hover text-white flex items-center justify-center shadow-glow-primary transform group-hover:scale-110 transition-transform">
-                    <Play className="w-5 h-5 fill-white ml-0.5" />
+                  {/* Hover Quick Action */}
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40">
+                    <div className="w-11 h-11 rounded-full bg-primary text-on-primary flex items-center justify-center shadow-glow-primary">
+                      <Play className="w-5 h-5 fill-current ml-0.5" />
+                    </div>
                   </div>
                 </div>
 
-                {movie.rating && (
-                  <div className="absolute top-2.5 left-2.5 px-2 py-1 rounded-md bg-black/70 backdrop-blur-md border border-white/10 text-[11px] font-semibold text-amber-400 flex items-center gap-1">
-                    <Star className="w-3 h-3 fill-amber-400" />
-                    <span>{movie.rating}</span>
-                  </div>
-                )}
-              </div>
-
-              <div className="p-3.5 flex-1 flex flex-col justify-between">
-                <div>
-                  <h3 className="text-xs font-semibold text-white truncate group-hover:text-primary transition-colors">
+                <div className="p-3 flex flex-col gap-1">
+                  <h3 className="font-display font-semibold text-sm text-on-surface truncate group-hover:text-primary transition-colors">
                     {movie.title}
                   </h3>
-                  <div className="flex items-center gap-2 text-[11px] text-gray-400 mt-0.5">
-                    {movie.year && <span>{movie.year}</span>}
-                    <span>•</span>
-                    <span>Movie</span>
+                  <div className="flex items-center justify-between text-xs text-on-surface-variant font-mono">
+                    <span>{movie.year || '2024'}</span>
+                    <span className="text-[10px] uppercase font-bold text-tertiary">
+                      {movie.provider_id === 'local-media' ? 'Local' : 'TMDB'}
+                    </span>
                   </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Popular Series & Anime Row */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Tv className="w-4 h-4 text-purple-400" />
-            <h2 className="text-lg font-bold text-white tracking-tight">Popular Series & Anime</h2>
+            ))}
           </div>
-        </div>
+        </section>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5">
-          {popularSeries.map(item => (
-            <div
-              key={item.provider_media_id}
-              onClick={() => handleMediaCardClick(item)}
-              className="group relative rounded-2xl overflow-hidden glass-card border border-white/5 hover:border-purple-500/40 transition-all duration-300 hover:shadow-cinematic hover:translate-y-[-2px] flex flex-col cursor-pointer"
-            >
-              <div className="aspect-[2/3] relative overflow-hidden bg-background-elevated">
-                <img
-                  src={item.poster_url || 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=600&q=80'}
-                  alt={item.title}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                />
-
-                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                  <div className="w-12 h-12 rounded-full bg-primary hover:bg-primary-hover text-white flex items-center justify-center shadow-glow-primary transform group-hover:scale-110 transition-transform">
-                    <Play className="w-5 h-5 fill-white ml-0.5" />
-                  </div>
-                </div>
-
-                <div className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-md bg-black/70 backdrop-blur-md border border-white/10 text-[10px] font-mono uppercase text-indigo-300 font-semibold">
-                  {item.media_type}
-                </div>
-              </div>
-
-              <div className="p-3.5 flex-1 flex flex-col justify-between">
-                <div>
-                  <h3 className="text-xs font-semibold text-white truncate group-hover:text-purple-300 transition-colors">
-                    {item.title}
-                  </h3>
-                  <div className="flex items-center gap-2 text-[11px] text-gray-400 mt-0.5">
-                    {item.year && <span>{item.year}</span>}
-                    <span>•</span>
-                    <span>{item.media_type === 'anime' ? 'Anime' : 'Series'}</span>
-                  </div>
-                </div>
-              </div>
+        {/* 5. THEMATIC DISCOVERY RAILS: SERIES & ANIME */}
+        <section className="flex flex-col gap-4">
+          <div className="flex items-end justify-between">
+            <div className="flex flex-col">
+              <span className="font-mono text-xs uppercase text-secondary tracking-wider font-bold">
+                Multi-Season Sagas
+              </span>
+              <h2 className="font-display text-2xl text-on-surface font-bold tracking-tight">
+                Series & Anime
+              </h2>
             </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Acclaimed Books & Novels Row */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <BookOpen className="w-4 h-4 text-emerald-400" />
-            <h2 className="text-lg font-bold text-white tracking-tight">Acclaimed Literature</h2>
           </div>
-        </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5">
-          {featuredBooks.map(book => (
-            <div
-              key={book.provider_media_id}
-              onClick={() => handleMediaCardClick(book)}
-              className="group relative rounded-2xl overflow-hidden glass-card border border-white/5 hover:border-emerald-500/40 transition-all duration-300 hover:shadow-cinematic hover:translate-y-[-2px] flex flex-col cursor-pointer"
-            >
-              <div className="aspect-[2/3] relative overflow-hidden bg-background-elevated">
-                <img
-                  src={book.poster_url || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&q=80'}
-                  alt={book.title}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                />
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
+            {popularSeries.concat(popularAnime).map((show) => (
+              <div
+                key={show.provider_media_id}
+                onClick={() => handleOpenDetails(show.provider_media_id, show.media_type)}
+                className="group flex flex-col bg-surface-container rounded-xl overflow-hidden border border-border-subtle hover:border-secondary/40 transition-all duration-200 cursor-pointer card-hover-lift shadow-md"
+              >
+                <div className="relative aspect-[2/3] w-full overflow-hidden bg-surface-container-lowest">
+                  <img
+                    src={
+                      show.poster_url ||
+                      'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=600&q=80'
+                    }
+                    alt={show.title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-transparent to-transparent opacity-80" />
 
-                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                  <div className="w-12 h-12 rounded-full bg-emerald-500 hover:bg-emerald-600 text-white flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform">
-                    <BookOpen className="w-5 h-5 text-white" />
+                  {/* Rating Badge */}
+                  {show.rating && (
+                    <div className="absolute top-2 left-2 flex items-center gap-1 bg-surface-container-high/90 backdrop-blur-md px-2 py-0.5 rounded text-[11px] font-mono font-bold text-secondary">
+                      <Star className="w-3 h-3 fill-secondary text-secondary" />
+                      {show.rating.toFixed(1)}
+                    </div>
+                  )}
+
+                  {/* Category Pill */}
+                  <div className="absolute top-2 right-2 bg-surface-container-highest/90 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold text-secondary">
+                    {show.media_type.toUpperCase()}
+                  </div>
+
+                  {/* Hover Quick Action */}
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40">
+                    <div className="w-11 h-11 rounded-full bg-secondary text-on-primary flex items-center justify-center shadow-glow-amber">
+                      <Info className="w-5 h-5 text-surface-container-lowest" />
+                    </div>
                   </div>
                 </div>
 
-                {book.rating && (
-                  <div className="absolute top-2.5 left-2.5 px-2 py-1 rounded-md bg-black/70 backdrop-blur-md border border-white/10 text-[11px] font-semibold text-amber-400 flex items-center gap-1">
-                    <Star className="w-3 h-3 fill-amber-400" />
-                    <span>{book.rating}</span>
-                  </div>
-                )}
-              </div>
-
-              <div className="p-3.5 flex-1 flex flex-col justify-between">
-                <div>
-                  <h3 className="text-xs font-semibold text-white truncate group-hover:text-emerald-300 transition-colors">
-                    {book.title}
+                <div className="p-3 flex flex-col gap-1">
+                  <h3 className="font-display font-semibold text-sm text-on-surface truncate group-hover:text-secondary transition-colors">
+                    {show.title}
                   </h3>
-                  <p className="text-[11px] text-gray-400 truncate">
-                    {book.overview?.replace('By ', '') || 'Author'}
-                  </p>
+                  <div className="flex items-center justify-between text-xs text-on-surface-variant font-mono">
+                    <span>{show.year || '2023'}</span>
+                    <span className="text-[10px] uppercase font-bold text-secondary">
+                      Seasons
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        </section>
       </div>
 
-      {/* Video Player Modal */}
+      {/* MODAL 1: Interactive Custom Video Player */}
       {activeVideo && (
         <VideoPlayer
-          playbackData={activeVideo.data}
+          playback={activeVideo.data}
           title={activeVideo.title}
           episodeTitle={activeVideo.episodeTitle}
+          mediaId={activeVideo.mediaId}
           onClose={() => setActiveVideo(null)}
         />
       )}
 
-      {/* Series Detail Modal */}
+      {/* MODAL 2: Series & Anime Detail Modal with Season/Episode Browser */}
       {selectedSeries && (
         <SeriesDetailModal
-          series={selectedSeries}
+          details={selectedSeries}
           onClose={() => setSelectedSeries(null)}
-          onPlayEpisode={async (sNum, epNum, epTitle) => {
-            try {
-              const playback = await resolvePlayback(
-                selectedSeries.provider_media_id,
-                selectedSeries.media_type,
-                sNum,
-                epNum
-              );
-              setActiveVideo({
-                data: playback,
-                title: selectedSeries.title,
-                episodeTitle: `S${sNum}:E${epNum} - ${epTitle}`,
-              });
-            } catch (err) {
-              console.warn(err);
-            }
+          onPlayEpisode={(epNumber, seasonNum, epTitle) => {
+            handlePlayMedia(
+              selectedSeries.provider_media_id,
+              selectedSeries.media_type,
+              `${selectedSeries.title} - S${seasonNum}E${epNumber}${epTitle ? `: ${epTitle}` : ''}`
+            );
           }}
+
         />
       )}
 
-      {/* Book Reader Modal */}
+      {/* MODAL 3: Interactive Book & Novel Reader */}
       {activeBook && (
         <BookReader
-          book={activeBook}
+          content={activeBook}
           onClose={() => setActiveBook(null)}
         />
       )}
