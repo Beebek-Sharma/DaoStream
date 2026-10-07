@@ -245,6 +245,7 @@ export async function updateWatchProgress(
 }
 
 export async function fetchWatchProgress(): Promise<any[]> {
+  if (!getToken()) return [];
   const res = await fetch(`${API_BASE}/library/progress/watch`, {
     headers: { ...authHeader() },
   });
@@ -307,6 +308,7 @@ export async function updateReadingProgress(
 }
 
 export async function fetchReadingProgress(): Promise<any[]> {
+  if (!getToken()) return [];
   const res = await fetch(`${API_BASE}/library/progress/reading`, {
     headers: { ...authHeader() },
   });
@@ -316,6 +318,7 @@ export async function fetchReadingProgress(): Promise<any[]> {
 
 // Watchlist API
 export async function fetchWatchlist(): Promise<any[]> {
+  if (!getToken()) return [];
   const res = await fetch(`${API_BASE}/library/watchlist`, {
     headers: { ...authHeader() },
   });
@@ -343,6 +346,7 @@ export async function removeFromWatchlist(mediaId: string): Promise<any> {
 
 // Favorites API
 export async function fetchFavorites(): Promise<any[]> {
+  if (!getToken()) return [];
   const res = await fetch(`${API_BASE}/library/favorites`, {
     headers: { ...authHeader() },
   });

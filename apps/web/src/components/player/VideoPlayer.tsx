@@ -101,6 +101,9 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
     if (controlsTimeoutRef.current) {
       clearTimeout(controlsTimeoutRef.current);
     }
+    if (isEmbed) {
+      return; // Keep controls available over iframe embeds
+    }
     controlsTimeoutRef.current = setTimeout(() => {
       if (isPlaying) {
         setShowControls(false);
@@ -108,7 +111,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
         setShowSubtitlesMenu(false);
       }
     }, 3500);
-  }, [isPlaying]);
+  }, [isPlaying, isEmbed]);
 
   // Initial seek & setup
   useEffect(() => {
@@ -395,7 +398,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
     <div
       ref={containerRef}
       onMouseMove={resetControlsTimeout}
-      className="fixed inset-0 z-50 bg-black flex items-center justify-center select-none overflow-hidden"
+      className="fixed inset-0 z-[100] bg-black flex items-center justify-center select-none overflow-hidden"
     >
       {/* Video Element or Embed Stream */}
       {activeSource ? (
@@ -554,8 +557,9 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
             <button
               onClick={onClose}
-              className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors"
+              className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors cursor-pointer"
               title="Close player"
+              aria-label="Close player"
             >
               <X className="w-5 h-5" />
             </button>

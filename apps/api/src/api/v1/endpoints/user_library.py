@@ -296,31 +296,41 @@ async def save_reading_progress(
     # Ensure book exists in DB before linking progress
     book = await db.get(Book, target_book_id)
     if not book:
-        from src.services.metadata_service import metadata_service
-        details = await metadata_service.get_media_details(target_book_id, media_type=MediaType.BOOK)
-        if details:
-            await metadata_service.sync_media_to_db(details, db)
+        try:
+            from src.services.metadata_service import metadata_service
+            details = await metadata_service.get_media_details(target_book_id, media_type=MediaType.BOOK)
+            if details:
+                await metadata_service.sync_media_to_db(details, db)
+        except Exception:
+            await db.rollback()
+
         book = await db.get(Book, target_book_id)
         if not book:
             media = await db.get(Media, target_book_id)
             if not media:
-                media = Media(
+                try:
+                    media = Media(
+                        id=target_book_id,
+                        title=f"Book {target_book_id}",
+                        type=MediaType.BOOK,
+                        genres=[],
+                        metadata_payload={},
+                    )
+                    db.add(media)
+                    await db.flush()
+                except Exception:
+                    await db.rollback()
+            try:
+                book = Book(
                     id=target_book_id,
-                    title=f"Book {target_book_id}",
-                    type=MediaType.BOOK,
-                    genres=[],
-                    metadata_payload={},
+                    author="Unknown Author",
+                    format="epub",
+                    reading_sources=[],
                 )
-                db.add(media)
-                await db.flush()
-            book = Book(
-                id=target_book_id,
-                author="Unknown Author",
-                format="epub",
-                reading_sources=[],
-            )
-            db.add(book)
-            await db.commit()
+                db.add(book)
+                await db.commit()
+            except Exception:
+                await db.rollback()
 
     stmt = select(ReadingProgress).where(
         ReadingProgress.user_id == current_user.id,

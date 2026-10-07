@@ -192,7 +192,7 @@ export const BookReader: React.FC<BookReaderProps> = ({
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex flex-col justify-between ${currentTheme.bg} ${currentTheme.text} transition-colors duration-300 select-text`}
+      className={`fixed inset-0 z-[100] flex flex-col justify-between ${currentTheme.bg} ${currentTheme.text} transition-colors duration-300 select-text`}
       id="reader-root"
     >
       {/* 1. READER TOP NAVIGATION BAR */}

@@ -174,78 +174,88 @@ class MetadataService:
         if existing:
             return existing
 
-        # Create base Media entry
-        media = Media(
-            id=details.provider_media_id,
-            title=details.title,
-            original_title=details.original_title,
-            type=details.media_type,
-            description=details.overview,
-            poster=details.poster_url,
-            backdrop=details.backdrop_url,
-            rating=details.rating,
-            genres=details.genres,
-            duration=details.duration_minutes,
-            metadata_payload={
-                "year": details.year,
-                "status": details.status,
-                "tags": details.tags,
-            },
-        )
-        db.add(media)
-        await db.flush()
-
-        # Add child subtype record
-        if details.media_type == MediaType.MOVIE:
-            movie = Movie(
-                id=media.id,
+        try:
+            # Create base Media entry
+            media = Media(
+                id=details.provider_media_id,
+                title=details.title,
+                original_title=details.original_title,
+                type=details.media_type,
+                description=details.overview,
+                poster=details.poster_url,
+                backdrop=details.backdrop_url,
+                rating=details.rating,
+                genres=details.genres,
+                duration=details.duration_minutes,
+                metadata_payload={
+                    "year": details.year,
+                    "status": details.status,
+                    "tags": details.tags,
+                },
             )
-            db.add(movie)
-        elif details.media_type in [MediaType.SERIES, MediaType.ANIME]:
-            series = Series(
-                id=media.id,
-                total_seasons=details.total_seasons or 0,
-                status=details.status,
-            )
-            db.add(series)
+            db.add(media)
             await db.flush()
 
-            # Add seasons and episodes if provided
-            for s_dto in details.seasons:
-                season = Season(
-                    series_id=series.id,
-                    season_number=s_dto.season_number,
-                    title=s_dto.title,
-                    description=s_dto.overview,
-                    poster=s_dto.poster_url,
+            # Add child subtype record
+            if details.media_type == MediaType.MOVIE:
+                movie = Movie(
+                    id=media.id,
                 )
-                db.add(season)
+                db.add(movie)
+            elif details.media_type in [MediaType.SERIES, MediaType.ANIME]:
+                series = Series(
+                    id=media.id,
+                    total_seasons=details.total_seasons or 0,
+                    status=details.status,
+                )
+                db.add(series)
                 await db.flush()
 
-                for ep_dto in s_dto.episodes:
-                    episode = Episode(
-                        id=ep_dto.id,
-                        season_id=season.id,
-                        episode_number=ep_dto.episode_number,
-                        title=ep_dto.title or f"Episode {ep_dto.episode_number}",
-                        description=ep_dto.overview,
-                        duration=ep_dto.duration_minutes,
+                # Add seasons and episodes if provided
+                for s_dto in details.seasons:
+                    season = Season(
+                        series_id=series.id,
+                        season_number=s_dto.season_number,
+                        title=s_dto.title,
+                        description=s_dto.overview,
+                        poster=s_dto.poster_url,
                     )
-                    db.add(episode)
+                    db.add(season)
+                    await db.flush()
 
-        elif details.media_type == MediaType.BOOK:
-            book = Book(
-                id=media.id,
-                author=details.author,
-                page_count=details.page_count,
-                isbn=details.isbn,
-                format=details.format or "epub",
-            )
-            db.add(book)
+                    for ep_dto in s_dto.episodes:
+                        episode = Episode(
+                            id=ep_dto.id,
+                            season_id=season.id,
+                            episode_number=ep_dto.episode_number,
+                            title=ep_dto.title or f"Episode {ep_dto.episode_number}",
+                            description=ep_dto.overview,
+                            duration=ep_dto.duration_minutes,
+                        )
+                        db.add(episode)
 
-        await db.commit()
-        await db.refresh(media)
-        return media
+            elif details.media_type == MediaType.BOOK:
+                book = Book(
+                    id=media.id,
+                    author=details.author,
+                    page_count=details.page_count,
+                    isbn=details.isbn,
+                    format=details.format or "epub",
+                )
+                db.add(book)
+
+            await db.commit()
+            await db.refresh(media)
+            return media
+        except Exception as exc:
+            logger.warning(f"Media sync duplicate or race condition caught for {details.provider_media_id}: {exc}")
+            await db.rollback()
+            stmt = select(Media).where(Media.id == details.provider_media_id)
+            res = await db.execute(stmt)
+            existing = res.scalar_one_or_none()
+            if existing:
+                return existing
+            raise
 
 
 
