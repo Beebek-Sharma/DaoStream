@@ -73,10 +73,10 @@ export const Sidebar: React.FC = () => {
             </div>
             <div className="flex flex-col">
               <span className="font-display font-bold text-base tracking-tight text-on-surface flex items-center gap-1.5">
-                OmniMedia Hub
+                DaoStream
               </span>
               <span className="font-mono text-[10px] uppercase font-bold tracking-widest text-secondary">
-                Unified Vault
+                Unified Media Hub
               </span>
             </div>
           </div>

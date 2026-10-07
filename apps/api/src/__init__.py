@@ -1,1 +1,1 @@
-"""Personal Media Hub Backend Application Package."""
+"""DaoStream Backend Application Package."""

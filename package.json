@@ -1,8 +1,8 @@
 {
-  "name": "personal-media-hub-root",
+  "name": "daostream-root",
   "version": "0.1.0",
   "private": true,
-  "description": "Personal Unified Media Hub monorepo",
+  "description": "DaoStream — Unified Media Streaming & Reader Hub monorepo",
   "scripts": {
     "dev:api": "powershell -Command \"$env:PYTHONPATH='apps/api'; apps/api/.venv/Scripts/uvicorn.exe src.main:app --reload --port 8000\"",
     "dev:web": "npm run dev --prefix apps/web",

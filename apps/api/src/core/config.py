@@ -21,7 +21,7 @@ class Settings(BaseSettings):
         extra="ignore"
     )
 
-    APP_NAME: str = "Personal Media Hub"
+    APP_NAME: str = "DaoStream"
     APP_ENV: str = "development"
     APP_HOST: str = "127.0.0.1"
     APP_PORT: int = 8000

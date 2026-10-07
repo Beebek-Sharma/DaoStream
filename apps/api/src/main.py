@@ -119,7 +119,7 @@ def create_application() -> FastAPI:
     app = FastAPI(
         title=settings.APP_NAME,
         version=settings.VERSION,
-        description="Unified personal media hub backend API.",
+        description="DaoStream — Unified Media Streaming Hub backend API.",
         lifespan=lifespan,
         docs_url="/docs" if settings.DEBUG else None,
         redoc_url="/redoc" if settings.DEBUG else None,

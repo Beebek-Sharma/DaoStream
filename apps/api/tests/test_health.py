@@ -3,7 +3,7 @@ def test_root_endpoint(client):
     assert response.status_code == 200
     data = response.json()
     assert data["status"] == "online"
-    assert "Personal Media Hub" in data["name"]
+    assert "DaoStream" in data["name"]
     assert data["api_v1"] == "/api/v1"
 
 
@@ -12,7 +12,7 @@ def test_health_endpoint(client):
     assert response.status_code == 200
     data = response.json()
     assert data["status"] == "healthy"
-    assert data["app"] == "Personal Media Hub"
+    assert data["app"] == "DaoStream"
     assert data["version"] == "0.1.0"
     assert data["environment"] == "development"
     assert "timestamp" in data

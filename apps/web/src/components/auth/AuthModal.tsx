@@ -65,7 +65,7 @@ export const AuthModal: React.FC = () => {
               <Shield className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-stone-100">Media Hub Identity</h3>
+              <h3 className="text-lg font-bold text-stone-100">DaoStream Identity</h3>
               <p className="text-xs text-stone-400">Authentication & Access Control</p>
             </div>
           </div>
