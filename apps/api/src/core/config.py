@@ -46,6 +46,7 @@ class Settings(BaseSettings):
     # External Provider Credentials
     TMDB_API_KEY: Optional[str] = None
     TMDB_ACCESS_TOKEN: Optional[str] = None
+    CONSUMET_API_URL: Optional[str] = "http://localhost:3000"
 
     @property
     def cors_origins_list(self) -> List[str]:

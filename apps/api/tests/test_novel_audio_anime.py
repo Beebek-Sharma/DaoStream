@@ -72,3 +72,49 @@ async def test_metadata_service_novel_chapter_text():
     text = await metadata_service.get_chapter_text("wn:lord-of-the-mysteries", 1)
     assert text is not None
     assert ("Crimson" in text or "Zhou Mingrui" in text or "Klein" in text)
+
+
+@pytest.mark.anyio
+async def test_anilist_anime_provider():
+    from src.providers.anime_provider import AniListAnimeProvider
+
+    from src.providers.capabilities import ProviderHealthStatus
+
+    provider = AniListAnimeProvider()
+    health = await provider.check_health()
+    assert health == ProviderHealthStatus.HEALTHY
+    assert provider.info.id == "anilist_anime_provider"
+    assert "AniList" in provider.info.name
+
+    # Search for popular/trending anime
+    results = await provider.search(query="", media_type=MediaType.ANIME)
+    assert len(results) > 0
+    # Search should return valid media items
+    first = results[0]
+    assert first.media_type == MediaType.ANIME
+    assert first.title is not None
+    assert first.provider_media_id.startswith("al:") or first.provider_media_id.startswith("jikan:")
+
+    # Search with query
+    query_results = await provider.search(query="Solo Leveling", media_type=MediaType.ANIME)
+    assert len(query_results) > 0
+    assert any("Solo" in r.title or "Leveling" in r.title for r in query_results)
+
+    # Details resolution
+    details = await provider.get_details(first.provider_media_id, MediaType.ANIME)
+    assert details is not None
+    assert len(details.seasons) > 0
+    assert len(details.seasons[0].episodes) > 0
+
+    # Playback sources resolution
+    sources = await provider.get_playback_sources(
+        provider_media_id=first.provider_media_id,
+        media_type=MediaType.ANIME,
+        season_number=1,
+        episode_number=1
+    )
+    assert len(sources) > 0
+    # Must include mirrors or HLS
+    titles = [s.title for s in sources]
+    assert any("69Anime" in t or "DaoStream" in t or "Consumet" in t or "AutoEmbed" in t for t in titles)
+

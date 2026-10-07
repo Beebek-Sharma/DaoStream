@@ -29,6 +29,7 @@ from src.providers.tmdb_provider import TMDBProvider
 from src.providers.local_provider import LocalMediaProvider
 from src.providers.webnovel_provider import WebNovelProvider
 from src.providers.audio_provider import AudioProvider
+from src.providers.anime_provider import AniListAnimeProvider
 
 setup_logging(debug=settings.DEBUG)
 logger = logging.getLogger("media_hub.main")
@@ -114,6 +115,7 @@ async def lifespan(app: FastAPI):
         )
     )
     provider_registry.register(LocalMediaProvider())
+    provider_registry.register(AniListAnimeProvider())
 
     yield
     logger.info(f"Shutting down {settings.APP_NAME}")

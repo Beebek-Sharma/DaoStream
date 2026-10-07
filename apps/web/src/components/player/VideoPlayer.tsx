@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
+import Hls from 'hls.js';
 import {
   Play,
   Pause,
@@ -44,6 +45,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const hlsRef = useRef<Hls | null>(null);
 
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [currentTime, setCurrentTime] = useState<number>(0);
@@ -74,13 +76,23 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
     activePlaybackData.primary_source ||
     activePlaybackData.sources[0];
 
+  const isM3U8 = Boolean(
+    activeSource &&
+    !activeSource.url.includes('embed') &&
+    (activeSource.format === 'm3u8' ||
+      activeSource.format === 'hls' ||
+      activeSource.url.toLowerCase().includes('.m3u8'))
+  );
+
   const isEmbed = Boolean(
     activeSource &&
+    !isM3U8 &&
     (activeSource.format === 'embed' ||
       activeSource.url.includes('embed') ||
       activeSource.url.includes('youtube.com') ||
       activeSource.url.includes('vidsrc') ||
-      activeSource.url.includes('autoembed'))
+      activeSource.url.includes('autoembed') ||
+      activeSource.url.includes('2embed'))
   );
 
   // Auto-hide controls timer
@@ -100,6 +112,11 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
   // Initial seek & setup
   useEffect(() => {
+    if (hlsRef.current) {
+      hlsRef.current.destroy();
+      hlsRef.current = null;
+    }
+
     if (isEmbed) {
       setIsLoading(false);
       return;
@@ -148,14 +165,67 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
     video.addEventListener('canplay', handleCanPlay);
     video.addEventListener('error', handleError);
 
+    if (isM3U8 && activeSource?.url) {
+      if (video.canPlayType('application/vnd.apple.mpegurl')) {
+        video.src = activeSource.url;
+      } else if (Hls.isSupported()) {
+        const hls = new Hls({
+          enableWorker: true,
+          lowLatencyMode: true,
+        });
+        hlsRef.current = hls;
+        hls.loadSource(activeSource.url);
+        hls.attachMedia(video);
+        hls.on(Hls.Events.MANIFEST_PARSED, () => {
+          setIsLoading(false);
+          if (initialTime > 0) {
+            video.currentTime = initialTime;
+          }
+        });
+        hls.on(Hls.Events.ERROR, (_event, data) => {
+          if (data.fatal) {
+            switch (data.type) {
+              case Hls.ErrorTypes.NETWORK_ERROR:
+                console.warn('HLS network error, attempting recovery...');
+                hls.startLoad();
+                break;
+              case Hls.ErrorTypes.MEDIA_ERROR:
+                console.warn('HLS media error, attempting recovery...');
+                hls.recoverMediaError();
+                break;
+              default:
+                console.error('HLS fatal error:', data);
+                hls.destroy();
+                const nextSource = activePlaybackData.sources.find(s => s.id !== activeSource?.id);
+                if (nextSource) {
+                  setSelectedSourceId(nextSource.id);
+                  setError(null);
+                } else {
+                  setError('HLS media stream could not be loaded.');
+                }
+                break;
+            }
+          }
+        });
+      } else {
+        video.src = activeSource.url;
+      }
+    } else if (activeSource?.url) {
+      video.src = activeSource.url;
+    }
+
     return () => {
+      if (hlsRef.current) {
+        hlsRef.current.destroy();
+        hlsRef.current = null;
+      }
       video.removeEventListener('loadedmetadata', handleLoadedMetadata);
       video.removeEventListener('timeupdate', handleTimeUpdate);
       video.removeEventListener('waiting', handleWaiting);
       video.removeEventListener('canplay', handleCanPlay);
       video.removeEventListener('error', handleError);
     };
-  }, [initialTime, activeSource, isEmbed]);
+  }, [initialTime, activeSource, isEmbed, isM3U8, activePlaybackData]);
 
   const targetMediaId = mediaId || activePlaybackData.media_id;
 
@@ -340,7 +410,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
         ) : (
           <video
             ref={videoRef}
-            src={activeSource.url}
+            src={isM3U8 ? undefined : activeSource.url}
             className="w-full h-full object-contain cursor-pointer"
             onClick={togglePlay}
             playsInline
@@ -435,7 +505,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
           <div className="space-y-0.5">
             <div className="flex items-center gap-2">
               <span className="px-2 py-0.5 rounded bg-primary/20 border border-primary/30 text-primary text-[10px] font-mono uppercase tracking-wider font-bold">
-                {isEmbed ? 'Cloud Stream' : 'Direct Play'}
+                {isM3U8 ? 'HLS .m3u8' : isEmbed ? 'Cloud Stream' : 'Direct Play'}
               </span>
               <h1 className="text-base sm:text-lg font-bold text-white tracking-wide truncate max-w-xs sm:max-w-md md:max-w-xl">
                 {title}
