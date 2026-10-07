@@ -1,6 +1,7 @@
 import pytest
 from starlette.testclient import TestClient
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 
 from src.models.user import User, UserRole
 from src.core.security import get_password_hash, create_access_token
@@ -8,21 +9,25 @@ from src.core.security import get_password_hash, create_access_token
 
 @pytest.fixture
 async def auth_token(session: AsyncSession) -> str:
-    user = User(
-        email="settings_admin@example.com",
-        username="settings_admin",
-        hashed_password=get_password_hash("password123"),
-        role=UserRole.ADMIN,
-        is_active=True,
-        preferences={
-            "preferred_quality": "1080p",
-            "auto_play_next": True,
-            "reader_theme": "obsidian",
-        },
-    )
-    session.add(user)
-    await session.commit()
-    await session.refresh(user)
+    stmt = select(User).where(User.email == "settings_admin@example.com")
+    res = await session.execute(stmt)
+    user = res.scalar_one_or_none()
+    if not user:
+        user = User(
+            email="settings_admin@example.com",
+            username="settings_admin",
+            hashed_password=get_password_hash("password123"),
+            role=UserRole.ADMIN,
+            is_active=True,
+            preferences={
+                "preferred_quality": "1080p",
+                "auto_play_next": True,
+                "reader_theme": "obsidian",
+            },
+        )
+        session.add(user)
+        await session.commit()
+        await session.refresh(user)
     return create_access_token(user.id)
 
 
@@ -59,8 +64,15 @@ async def test_user_preferences_flow(client: TestClient, auth_token: str):
     assert verify_res.json()["preferred_quality"] == "4k"
 
 
-def test_system_diagnostics(client: TestClient):
-    res = client.get("/api/v1/settings/diagnostics")
+@pytest.mark.anyio
+async def test_system_diagnostics(client: TestClient, auth_token: str):
+    # Reject unauthenticated
+    res_unauth = client.get("/api/v1/settings/diagnostics")
+    assert res_unauth.status_code == 401
+
+    # Allow authenticated admin
+    headers = {"Authorization": f"Bearer {auth_token}"}
+    res = client.get("/api/v1/settings/diagnostics", headers=headers)
     assert res.status_code == 200
     data = res.json()
     assert "app_name" in data
@@ -73,14 +85,20 @@ def test_system_diagnostics(client: TestClient):
     assert len(data["providers"]) > 0
 
 
-def test_provider_connection_test(client: TestClient):
-    # Test valid provider
-    res = client.post("/api/v1/settings/providers/mock_media_provider/test")
+@pytest.mark.anyio
+async def test_provider_connection_test(client: TestClient, auth_token: str):
+    # Reject unauthenticated
+    res_unauth = client.post("/api/v1/settings/providers/local-media/test")
+    assert res_unauth.status_code == 401
+
+    headers = {"Authorization": f"Bearer {auth_token}"}
+    # Test valid provider with admin token
+    res = client.post("/api/v1/settings/providers/local-media/test", headers=headers)
     assert res.status_code == 200
     data = res.json()
-    assert data["provider_id"] == "mock_media_provider"
+    assert data["provider_id"] == "local-media"
     assert data["is_healthy"] is True
 
-    # Test unknown provider
-    res_unknown = client.post("/api/v1/settings/providers/unknown_provider_xyz/test")
+    # Test unknown provider with admin token
+    res_unknown = client.post("/api/v1/settings/providers/unknown_provider_xyz/test", headers=headers)
     assert res_unknown.status_code == 404

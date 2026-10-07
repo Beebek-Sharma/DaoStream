@@ -8,9 +8,10 @@ from typing import List, Optional, Dict, Any
 from src.db.session import get_db
 from src.api.deps import get_current_active_user
 from src.models.user import User
-from src.models.media import Media
+from src.models.media import Media, Book, MediaType, Episode
 from src.models.library import Watchlist, Favorite
 from src.models.progress import WatchProgress, ReadingProgress
+from src.core.sanitizer import sanitize_text
 
 router = APIRouter()
 
@@ -18,16 +19,22 @@ router = APIRouter()
 class WatchProgressPayload(BaseModel):
     media_id: str
     episode_id: Optional[str] = None
-    position: float
+    position: Optional[float] = None
+    current_time: Optional[float] = None
     duration: float
     percentage: Optional[float] = None
     completed: Optional[bool] = None
 
 
 class ReadingProgressPayload(BaseModel):
-    book_id: str
-    location: str
-    percentage: float
+    book_id: Optional[str] = None
+    media_id: Optional[str] = None
+    location: Optional[str] = None
+    last_location: Optional[str] = None
+    percentage: Optional[float] = None
+    progress_percentage: Optional[float] = None
+    current_page: Optional[int] = None
+    total_pages: Optional[int] = None
     completed: Optional[bool] = None
     bookmarks: Optional[List[Dict[str, Any]]] = None
 
@@ -188,9 +195,10 @@ async def save_watch_progress(
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
 ):
+    effective_position = payload.position if payload.position is not None else (payload.current_time or 0.0)
     pct = payload.percentage
     if pct is None and payload.duration > 0:
-        pct = (payload.position / payload.duration) * 100
+        pct = (effective_position / payload.duration) * 100
     pct = round(pct or 0.0, 2)
 
     is_completed = payload.completed if payload.completed is not None else (pct >= 90.0)
@@ -204,7 +212,7 @@ async def save_watch_progress(
     existing = res.scalar_one_or_none()
 
     if existing:
-        existing.position = payload.position
+        existing.position = effective_position
         existing.duration = payload.duration
         existing.percentage = pct
         existing.completed = is_completed
@@ -219,11 +227,18 @@ async def save_watch_progress(
             if details:
                 await metadata_service.sync_media_to_db(details, db)
 
+        # Validate episode_id if specified to prevent foreign key constraint violations
+        valid_episode_id = payload.episode_id
+        if valid_episode_id:
+            ep = await db.get(Episode, valid_episode_id)
+            if not ep:
+                valid_episode_id = None
+
         new_prog = WatchProgress(
             user_id=current_user.id,
             media_id=payload.media_id,
-            episode_id=payload.episode_id,
-            position=payload.position,
+            episode_id=valid_episode_id,
+            position=effective_position,
             duration=payload.duration,
             percentage=pct,
             completed=is_completed,
@@ -270,36 +285,71 @@ async def save_reading_progress(
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
 ):
-    is_completed = payload.completed if payload.completed is not None else (payload.percentage >= 95.0)
+    target_book_id = payload.book_id or payload.media_id
+    if not target_book_id:
+        raise HTTPException(status_code=400, detail="Missing book_id or media_id")
+
+    effective_location = payload.location or payload.last_location or (f"page-{payload.current_page}" if payload.current_page else "0")
+    effective_percentage = payload.percentage if payload.percentage is not None else (payload.progress_percentage or 0.0)
+    is_completed = payload.completed if payload.completed is not None else (effective_percentage >= 95.0)
+
+    # Ensure book exists in DB before linking progress
+    book = await db.get(Book, target_book_id)
+    if not book:
+        from src.services.metadata_service import metadata_service
+        details = await metadata_service.get_media_details(target_book_id, media_type=MediaType.BOOK)
+        if details:
+            await metadata_service.sync_media_to_db(details, db)
+        book = await db.get(Book, target_book_id)
+        if not book:
+            media = await db.get(Media, target_book_id)
+            if not media:
+                media = Media(
+                    id=target_book_id,
+                    title=f"Book {target_book_id}",
+                    type=MediaType.BOOK,
+                    genres=[],
+                    metadata_payload={},
+                )
+                db.add(media)
+                await db.flush()
+            book = Book(
+                id=target_book_id,
+                author="Unknown Author",
+                format="epub",
+                reading_sources=[],
+            )
+            db.add(book)
+            await db.commit()
 
     stmt = select(ReadingProgress).where(
         ReadingProgress.user_id == current_user.id,
-        ReadingProgress.book_id == payload.book_id,
+        ReadingProgress.book_id == target_book_id,
     )
     res = await db.execute(stmt)
     existing = res.scalar_one_or_none()
 
     if existing:
-        existing.location = payload.location
-        existing.percentage = payload.percentage
+        existing.location = sanitize_text(effective_location, 255) or ""
+        existing.percentage = effective_percentage
         existing.completed = is_completed
         if payload.bookmarks is not None:
             existing.bookmarks = payload.bookmarks
         await db.commit()
-        return {"status": "updated", "id": existing.id, "percentage": payload.percentage}
+        return {"status": "updated", "id": existing.id, "percentage": effective_percentage}
     else:
         new_prog = ReadingProgress(
             user_id=current_user.id,
-            book_id=payload.book_id,
-            location=payload.location,
-            percentage=payload.percentage,
+            book_id=target_book_id,
+            location=sanitize_text(effective_location, 255) or "",
+            percentage=effective_percentage,
             completed=is_completed,
             bookmarks=payload.bookmarks or [],
         )
         db.add(new_prog)
         await db.commit()
         await db.refresh(new_prog)
-        return {"status": "created", "id": new_prog.id, "percentage": payload.percentage}
+        return {"status": "created", "id": new_prog.id, "percentage": effective_percentage}
 
 
 @router.get("/progress/reading")
@@ -349,10 +399,12 @@ async def create_collection(
     db: AsyncSession = Depends(get_db),
 ):
     from src.models.library import Collection
+    clean_name = sanitize_text(payload.name, 100) or "Untitled Collection"
+    clean_desc = sanitize_text(payload.description, 500) if payload.description else None
     collection = Collection(
         user_id=current_user.id,
-        name=payload.name,
-        description=payload.description,
+        name=clean_name,
+        description=clean_desc,
         is_public=payload.is_public,
     )
     db.add(collection)
@@ -423,6 +475,14 @@ async def add_item_to_collection(
     col = await db.get(Collection, collection_id)
     if not col or col.user_id != current_user.id:
         raise HTTPException(status_code=404, detail="Collection not found")
+
+    # Ensure media exists before adding to collection items
+    media = await db.get(Media, payload.media_id)
+    if not media:
+        from src.services.metadata_service import metadata_service
+        details = await metadata_service.get_media_details(payload.media_id)
+        if details:
+            await metadata_service.sync_media_to_db(details, db)
 
     item = CollectionItem(
         collection_id=collection_id,

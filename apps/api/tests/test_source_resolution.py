@@ -16,6 +16,8 @@ def reset_resolver_cache():
     source_resolver_service._cache.clear()
     yield
     source_resolver_service._cache.clear()
+    provider_registry.unregister("mock_media_provider")
+    provider_registry.unregister("failing_streaming_provider")
 
 
 class FailingStreamingProvider(StreamingProviderInterface):

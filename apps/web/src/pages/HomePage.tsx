@@ -53,7 +53,7 @@ export const HomePage: React.FC = () => {
 
     const loadHomeData = async () => {
       try {
-        const [moviesRes, seriesRes, animeRes, booksRes, watchProgRes, readProgRes, watchListRes] =
+        const [moviesRes, seriesRes, animeRes, , watchProgRes, readProgRes, watchListRes] =
           await Promise.allSettled([
             searchMedia('', 'movie'),
             searchMedia('', 'series'),
@@ -67,194 +67,31 @@ export const HomePage: React.FC = () => {
         if (!mounted) return;
 
         const movies: MediaItem[] =
-          moviesRes.status === 'fulfilled' && moviesRes.value.length > 0
-            ? moviesRes.value
-            : [
-                {
-                  provider_id: 'local-media',
-                  provider_media_id: 'mock-m-1',
-                  title: 'Dune: Prophecy',
-                  media_type: 'movie',
-                  year: 2024,
-                  overview:
-                    'Ten thousand years before the ascension of Paul Atreides, two Harkonnen sisters combat forces that threaten the destiny of humankind and establish the fabled sect known as the Bene Gesserit.',
-                  poster_url:
-                    'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&q=80',
-                  backdrop_url:
-                    'https://images.unsplash.com/photo-1506703719100-a0f3a48c0f86?w=1280&q=80',
-                  rating: 9.1,
-                },
-                {
-                  provider_id: 'tmdb',
-                  provider_media_id: 'mock-m-2',
-                  title: 'Cyberpunk: Neon Symphony',
-                  media_type: 'movie',
-                  year: 2023,
-                  overview:
-                    'In a rain-drenched cyberpunk metropolis, a renegade acoustic hacker uncovers an encrypted cognitive surveillance conspiracy deep within the megastructure core.',
-                  poster_url:
-                    'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=600&q=80',
-                  backdrop_url:
-                    'https://images.unsplash.com/photo-1514565131-fce0801e5785?w=1280&q=80',
-                  rating: 8.7,
-                },
-                {
-                  provider_id: 'local-media',
-                  provider_media_id: 'mock-m-3',
-                  title: 'Severance: Terminal Descent',
-                  media_type: 'movie',
-                  year: 2024,
-                  overview:
-                    'Employees discover anomalous data packets in the macrodata refinement wing triggering a high-stakes protocol lockdown.',
-                  poster_url:
-                    'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=600&q=80',
-                  backdrop_url:
-                    'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1280&q=80',
-                  rating: 9.0,
-                },
-              ];
+          moviesRes.status === 'fulfilled' && moviesRes.value ? moviesRes.value : [];
 
         const series: MediaItem[] =
-          seriesRes.status === 'fulfilled' && seriesRes.value.length > 0
-            ? seriesRes.value
-            : [
-                {
-                  provider_id: 'local-media',
-                  provider_media_id: 'mock-s-1',
-                  title: 'Chronicles of Aetheria',
-                  media_type: 'series',
-                  year: 2023,
-                  overview:
-                    'Ancient elemental dynasties clash across floating islands as energy crystals deplete and sky-ships patrol the outer void.',
-                  poster_url:
-                    'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=600&q=80',
-                  backdrop_url:
-                    'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=1280&q=80',
-                  rating: 8.9,
-                },
-                {
-                  provider_id: 'tmdb',
-                  provider_media_id: 'mock-s-2',
-                  title: 'Severance',
-                  media_type: 'series',
-                  year: 2024,
-                  overview:
-                    'Mark leads a team of office workers whose memories have been surgically divided between their work and personal lives.',
-                  poster_url:
-                    'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=600&q=80',
-                  backdrop_url:
-                    'https://images.unsplash.com/photo-1506703719100-a0f3a48c0f86?w=1280&q=80',
-                  rating: 9.0,
-                },
-              ];
+          seriesRes.status === 'fulfilled' && seriesRes.value ? seriesRes.value : [];
 
         const anime: MediaItem[] =
-          animeRes.status === 'fulfilled' && animeRes.value.length > 0
-            ? animeRes.value
-            : [
-                {
-                  provider_id: 'local-media',
-                  provider_media_id: 'mock-a-1',
-                  title: 'Blade of the Celestial Wind',
-                  media_type: 'anime',
-                  year: 2023,
-                  overview:
-                    'A spirit swordsman traverses mystical realms to seal rifts between realms of gods and men.',
-                  poster_url:
-                    'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=600&q=80',
-                  backdrop_url:
-                    'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=1280&q=80',
-                  rating: 8.9,
-                },
-              ];
-
-        const books: MediaItem[] =
-          booksRes.status === 'fulfilled' && booksRes.value.length > 0
-            ? booksRes.value
-            : [
-                {
-                  provider_id: 'openlibrary',
-                  provider_media_id: 'mock-b-1',
-                  title: 'The Quantum Cartographer',
-                  media_type: 'book',
-                  year: 2021,
-                  overview:
-                    'A profound journey through multidimensional topologies and forgotten cryptographic algorithms.',
-                  poster_url:
-                    'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&q=80',
-                  backdrop_url:
-                    'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1280&q=80',
-                  rating: 9.3,
-                },
-                {
-                  provider_id: 'local-media',
-                  provider_media_id: 'mock-b-2',
-                  title: 'Project Hail Mary',
-                  media_type: 'book',
-                  year: 2022,
-                  overview:
-                    'Ryland Grace is the sole survivor on a desperate last-chance mission—and if he fails, humanity and the earth itself will perish.',
-                  poster_url:
-                    'https://images.unsplash.com/photo-1512820790803-83ca734da794?w=600&q=80',
-                  backdrop_url:
-                    'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1280&q=80',
-                  rating: 9.5,
-                },
-              ];
+          animeRes.status === 'fulfilled' && animeRes.value ? animeRes.value : [];
 
         setTrendingMovies(movies);
         setPopularSeries(series);
         setPopularAnime(anime);
         setFeaturedItem(movies[0] || series[0] || null);
 
-        // Continue watching fallback/real items
-        if (watchProgRes.status === 'fulfilled' && watchProgRes.value.length > 0) {
+        // Continue watching items from database
+        if (watchProgRes.status === 'fulfilled' && watchProgRes.value && watchProgRes.value.length > 0) {
           setContinueWatchingList(watchProgRes.value);
         } else {
-          setContinueWatchingList([
-            {
-              id: 'cw-1',
-              title: 'Cyberpunk: Edgerunners',
-              episode_code: 'S01:E04',
-              time_remaining: '18m remaining',
-              progress_pct: 68,
-              thumbnail_url:
-                'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=600&q=80',
-              media_type: 'anime',
-              provider_media_id: 'mock-a-1',
-            },
-            {
-              id: 'cw-2',
-              title: 'Dune: Prophecy',
-              episode_code: 'S01:E03',
-              time_remaining: '42m remaining',
-              progress_pct: 45,
-              thumbnail_url:
-                'https://images.unsplash.com/photo-1506703719100-a0f3a48c0f86?w=600&q=80',
-              media_type: 'series',
-              provider_media_id: 'mock-s-1',
-            },
-          ]);
+          setContinueWatchingList([]);
         }
 
-        // Continue reading fallback/real items
-        if (readProgRes.status === 'fulfilled' && readProgRes.value.length > 0) {
+        // Continue reading items from database
+        if (readProgRes.status === 'fulfilled' && readProgRes.value && readProgRes.value.length > 0) {
           setContinueReadingList(readProgRes.value);
         } else {
-          setContinueReadingList(
-            books.map((b, idx) => ({
-              id: b.provider_media_id || `cr-${idx + 1}`,
-              title: b.title,
-              author: b.overview?.split('.')[0] || 'Andy Weir',
-              chapter_label: `CH. ${idx + 1} / Origin Coordinates`,
-              progress_pct: 45 + idx * 10,
-              page_info: `Page ${120 + idx * 60} of 420`,
-              cover_url:
-                b.poster_url ||
-                'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&q=80',
-              provider_media_id: b.provider_media_id,
-            }))
-          );
+          setContinueReadingList([]);
         }
 
 

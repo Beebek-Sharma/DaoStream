@@ -77,6 +77,61 @@ export const authHeader = (): Record<string, string> => {
   return token ? { Authorization: `Bearer ${token}` } : {};
 };
 
+export interface UserProfile {
+  id: string;
+  email: string;
+  username: string;
+  role: 'admin' | 'user';
+  is_active: boolean;
+  is_superuser: boolean;
+  preferences?: Record<string, any>;
+}
+
+export interface AuthResponse {
+  access_token: string;
+  token_type: string;
+  user: UserProfile;
+}
+
+// Authentication API
+export async function loginUser(emailOrUsername: string, password: string): Promise<AuthResponse> {
+  const res = await fetch(`${API_BASE}/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email_or_username: emailOrUsername, password }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error?.message || 'Login failed. Check your credentials.');
+  }
+  const data: AuthResponse = await res.json();
+  setToken(data.access_token);
+  return data;
+}
+
+export async function registerUser(email: string, username: string, password: string): Promise<AuthResponse> {
+  const res = await fetch(`${API_BASE}/auth/register`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, username, password }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error?.message || 'Registration failed.');
+  }
+  const data: AuthResponse = await res.json();
+  setToken(data.access_token);
+  return data;
+}
+
+export async function fetchCurrentUser(): Promise<UserProfile> {
+  const res = await fetch(`${API_BASE}/auth/me`, {
+    headers: { ...authHeader() },
+  });
+  if (!res.ok) throw new Error('Failed to fetch user profile');
+  return res.json();
+}
+
 // Providers API
 export async function fetchProviders(enabledOnly = false): Promise<ProviderInfo[]> {
   const res = await fetch(`${API_BASE}/providers?enabled_only=${enabledOnly}`, {

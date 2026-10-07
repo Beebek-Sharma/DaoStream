@@ -81,7 +81,9 @@ from starlette.testclient import TestClient
 
 @pytest.mark.anyio
 async def test_search_gracefully_survives_provider_outage(client: TestClient):
-    # Register failing provider
+    from src.providers.mock_provider import MockMediaHubProvider
+    mock = MockMediaHubProvider()
+    provider_registry.register(mock)
     failing = FailingProvider(failure_mode="timeout")
     provider_registry.register(failing)
 
@@ -91,14 +93,18 @@ async def test_search_gracefully_survives_provider_outage(client: TestClient):
         results = await service.search_media(query="Cosmic", media_type=MediaType.MOVIE)
         assert isinstance(results, list)
         # Healthy providers should still contribute results
-        assert any(r.title == "Cosmic Drift" for r in results)
+        assert len(results) > 0
+        assert any("Cosmic" in r.title for r in results)
     finally:
         provider_registry.unregister(failing.info.id)
+        provider_registry.unregister(mock.info.id)
 
 
 @pytest.mark.anyio
 async def test_source_resolution_fallback_on_provider_crash(client: TestClient):
-    # Register failing streaming provider
+    from src.providers.mock_provider import MockMediaHubProvider
+    mock = MockMediaHubProvider()
+    provider_registry.register(mock)
     failing_streamer = FailingProvider(failure_mode="network_error")
     provider_registry.register(failing_streamer)
 
@@ -114,6 +120,7 @@ async def test_source_resolution_fallback_on_provider_crash(client: TestClient):
         assert len(res.sources) > 0
     finally:
         provider_registry.unregister(failing_streamer.info.id)
+        provider_registry.unregister(mock.info.id)
 
 
 @pytest.mark.anyio

@@ -1,137 +1,210 @@
-# Personal Unified Media Hub
+# DaoStream 🌊
 
-[![Tests](https://img.shields.io/badge/Tests-60%2F60%20Passing-emerald)](scripts/run_all_tests.bat)
-[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Python](https://img.shields.io/badge/Python-3.12%2B-blue)](apps/api)
-[![React](https://img.shields.io/badge/React-18-cyan)](apps/web)
-[![Docker](https://img.shields.io/badge/Docker-Production%20Ready-2496ED)](docker-compose.prod.yml)
+<p align="center">
+  <strong>The Next-Generation Unified Media Streaming & Reader Hub</strong><br>
+  <em>Stream Movies, TV Series, Anime, and Read Books in a Single High-Performance Architecture</em>
+</p>
 
-A self-hosted, personal unified media platform providing a single cinematic interface for **Movies**, **TV Series**, **Anime**, **Asian Dramas**, and **Books/Novels**.
-
-Built on a **Provider Adapter Architecture** that federates authorized external providers (TMDB, OpenLibrary) with high-speed local disk storage and streaming.
-
----
-
-## Key Features
-
-- 🎬 **Unified Media Catalog:** Seamlessly browse Movies, TV Series, Anime, and Dramas alongside Books and Novels in one coherent interface.
-- 📺 **Custom Video Player:** Fluid playback controls, multi-quality resolution selector (4K/1080p/720p/480p), VTT subtitle track switching, automatic position resume, and background progress synchronization.
-- 📖 **Interactive Book & Novel Reader:** Full-featured reader supporting Light, Sepia, and Midnight themes, adjustable typography, line spacing, margins, chapter table-of-contents navigation, and reading percentage tracking.
-- ⚡ **Federated Instant Search (`Ctrl+K`):** Global unified modal querying all registered providers in parallel with sub-100ms response times and category filters.
-- 📂 **Local Media Scanner & Byte-Range Streaming:** Automatic regex filename parser for movies, series/anime episodes, and books. Direct high-throughput RFC 7233 partial content HTTP Byte-Range streaming (`206 Partial Content`) with zero RAM proxy buffering.
-- 📚 **Personal Library & Custom Collections:** Watchlist, favorites, continue watching/reading rails, unified watch & read history, and user-defined custom collections.
-- 🛡️ **Hardened Enterprise Security:** Built-in SSRF protection engine blocking private IP ranges and cloud metadata services, strict canonical path traversal isolation, zero-knowledge credential masking, and comprehensive HTTP security headers.
-- ⚙️ **Comprehensive Administration:** Web-based provider management, credential storage, user preferences, storage path configuration, and real-time system diagnostics.
-- 🐳 **Production-Ready Deployment:** Docker Compose orchestration, unbuffered Nginx reverse proxy, optional PostgreSQL profile, and online atomic database backup script with automated rotation.
+<p align="center">
+  <img src="https://img.shields.io/badge/Tests-65%2F65%20Passing-emerald?style=for-the-badge&logo=pytest" alt="Tests" />
+  <img src="https://img.shields.io/badge/Python-3.12%2B-blue?style=for-the-badge&logo=python" alt="Python" />
+  <img src="https://img.shields.io/badge/FastAPI-0.110%2B-009688?style=for-the-badge&logo=fastapi" alt="FastAPI" />
+  <img src="https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react" alt="React" />
+  <img src="https://img.shields.io/badge/TypeScript-5.0-3178C6?style=for-the-badge&logo=typescript" alt="TypeScript" />
+  <img src="https://img.shields.io/badge/Vite-5.4-646CFF?style=for-the-badge&logo=vite" alt="Vite" />
+  <img src="https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge" alt="License" />
+</p>
 
 ---
 
-## Architectural Topology
+## 🌟 Overview
+
+**DaoStream** is a self-hosted, personal unified media streaming hub engineered to provide a seamless, modern streaming experience across all entertainment categories: **Movies**, **TV Series**, **Anime**, and **Novels/Books**.
+
+Powered by a federated **Provider Adapter Architecture**, DaoStream aggregates live metadata and streaming sources from TMDB and OpenLibrary alongside ultra-fast local disk streaming (`206 Partial Content`), wrapped in an **Obsidian Cinema** dark design system.
+
+---
+
+## ✨ Key Features
+
+### 🎬 Cinematic Films & TV Series
+- **Live TMDB Catalog:** Weekly trending showcases, curated filters (4K, Top Rated 8.0+, Recent Releases).
+- **Deep Episode Explorer:** Dynamic season and episode browser with individual episode streaming.
+- **Multi-Server Streaming:** Automatic failover between Official HD Trailers (YouTube) and resilient Cloud Streaming Servers (Server 1 through 4 via VidSrc & AutoEmbed).
+
+### 📺 Advanced Player Engine
+- **Resilient Stream Switching:** Switch between Cloud Server 1, Server 2, Server 3, Server 4, and Trailers with zero reloading.
+- **Automatic Fallback:** Seamlessly recovers if any external link experiences downtime.
+- **Keyboard Shortcuts:** Space/K (Play/Pause), F (Fullscreen), M (Mute), Left/Right Arrows (10s Seek), Up/Down (Volume).
+- **Progress Tracking:** Automatic background sync of watch duration and completion percentage.
+
+### 📖 Obsidian Book & Novel Reader
+- **Distraction-Free Reading:** Clean typography tailored for long reading sessions.
+- **Themes & Customization:** Obsidian Dark, Sepia, and Pure Midnight themes with adjustable font scale.
+- **Chapter Navigation:** Instant table of contents drawer and progress saving.
+
+### ⚡ Global Federated Search (`Ctrl+K`)
+- Instant search across Movies, Series, Anime, and Books simultaneously with sub-100ms response times.
+
+### 🛡️ Enterprise-Grade Security
+- **Strict Environment Isolation:** No hardcoded secrets; `.env` is fully excluded from version control.
+- **Authentication & RBAC:** Secure bcrypt password hashing, stateless JWT session tokens, and protected admin endpoints.
+- **SSRF & Path Traversal Guards:** Blocks access to private IP subnets and locks file reads strictly to designated storage folders.
+- **XSS & Input Sanitization:** Automated HTML escape filtering on search terms and library mutations.
+
+---
+
+## 🏛️ Architecture & System Topology
 
 ```text
-                     ┌─────────────────────────────────────────┐
-                     │     Cinematic Web Frontend (React 18)   │
-                     │  - Tailwind CSS + Dark Mode Theme       │
-                     │  - Route-Level Code Splitting (Vite)    │
-                     │  - Accessible Keyboard Navigation       │
-                     └────────────────────┬────────────────────┘
-                                          │ REST / SSE
-                     ┌────────────────────▼────────────────────┐
-                     │     FastAPI Core Engine (Python 3.12)   │
-                     │  - RFC 7233 Byte-Range Video Streaming  │
-                     │  - Multi-Provider Source Resolver       │
-                     │  - Thread-Safe TTL Metadata Caches      │
-                     │  - SSRF & Path Traversal Guards         │
-                     └───────┬─────────────────────────┬───────┘
-                             │                         │
-             ┌───────────────▼────────┐       ┌────────▼───────────────┐
-             │   Provider Framework   │       │   Persistence & Storage│
-             ├────────────────────────┤       ├────────────────────────┤
-             │ • TMDB (Movies/Series) │       │ • SQLite (WAL mode)    │
-             │ • OpenLibrary (Books)  │       │ • PostgreSQL (Optional)│
-             │ • Local Disk Scanner   │       │ • Local Disk Storage   │
-             │ • Extensible Adapters  │       │ • Automated Backups    │
-             └────────────────────────┘       └────────────────────────┘
+                             ┌──────────────────────────────────────┐
+                             │       DaoStream Web Frontend         │
+                             │   (React 18 + Vite + Tailwind CSS)   │
+                             └──────────────────┬───────────────────┘
+                                                │ REST / SSE
+                             ┌──────────────────▼───────────────────┐
+                             │        FastAPI Core Backend          │
+                             │  - JWT Auth & RBAC Security Engine   │
+                             │  - Multi-Server Playback Resolver    │
+                             │  - RFC 7233 Byte-Range Streaming     │
+                             │  - LRU/TTL Cache & Input Sanitizer   │
+                             └──────────┬───────────────────┬───────┘
+                                        │                   │
+         ┌──────────────────────────────▼───┐   ┌───────────▼──────────────────┐
+         │        Provider Adapters         │   │     Persistence Layer        │
+         ├──────────────────────────────────┤   ├──────────────────────────────┤
+         │ • TMDB Adapter (Movies & TV)     │   │ • SQLite (WAL mode, async)   │
+         │ • OpenLibrary Adapter (Books)    │   │ • PostgreSQL (Optional)      │
+         │ • Local Disk Media Scanner       │   │ • Atomic Backups & Snapshots │
+         └──────────────────────────────────┘   └──────────────────────────────┘
 ```
 
 ---
 
-## Quickstart
+## 🚀 Quick Start Guide
 
-### 1. Docker Compose (Recommended for Production)
+### Prerequisites
+- **Node.js** 18+ & **npm**
+- **Python** 3.12+
+- *(Optional)* **Docker** & **Docker Compose**
+
+### 1. Clone & Configure
 
 ```bash
-# Clone the repository
-git clone https://github.com/your-username/media-hub.git
-cd media-hub
+git clone https://github.com/Beebek-Sharma/DaoStream.git
+cd DaoStream
 
-# Copy environment configuration
+# Create your local environment file
 cp .env.example .env
-
-# Start production containers (API + Web + Nginx)
-docker compose -f docker-compose.prod.yml up -d --build
 ```
-Open **`http://localhost`** in your browser.
 
-*To activate PostgreSQL instead of default SQLite:*
-```bash
-docker compose -f docker-compose.prod.yml --profile postgres up -d
+Open `.env` and fill in your credentials:
+```ini
+SECRET_KEY=generate_with_openssl_rand_hex_32
+TMDB_API_KEY=your_free_tmdb_api_key_here
+TMDB_ACCESS_TOKEN=your_tmdb_read_access_token_here
 ```
+> 💡 *You can obtain a free TMDB API Key in 2 minutes at [themoviedb.org/settings/api](https://www.themoviedb.org/settings/api).*
 
 ---
 
-### 2. Local Bare-Metal Development
+### 2. Run with Bare Metal
 
 #### Backend (FastAPI)
 ```bash
 cd apps/api
+
+# Create and activate virtual environment
 python -m venv .venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+source .venv/bin/activate       # On Linux/macOS
+# .venv\Scripts\activate        # On Windows
+
+# Install dependencies
 pip install -r requirements.txt
 
-# Run database migrations
-alembic upgrade head
-
-# Start API dev server (port 8000)
+# Start backend server (port 8000)
 uvicorn src.main:app --reload --port 8000
 ```
 
 #### Frontend (React + Vite)
 ```bash
 cd apps/web
+
+# Install dependencies
 npm install
+
+# Start Vite dev server (port 5173)
 npm run dev
 ```
-Open **`http://localhost:5173`** in your browser.
+
+Visit **`http://localhost:5173`** in your browser.
 
 ---
 
-## Running Automated Tests
-
-Media Hub includes a comprehensive 60-test integration test suite covering domain models, provider adapters, failure resilience, source resolution, and end-to-end user journeys:
+### 3. Run with Docker Compose (Production)
 
 ```bash
-# Windows
-.\scripts\run_all_tests.bat
-# or PowerShell:
-.\scripts\run_all_tests.ps1
+# Build and start all services (Backend + Web + Nginx)
+docker compose -f docker-compose.prod.yml up -d --build
+```
+Access the application on **`http://localhost`**.
 
-# Direct Pytest command:
-apps/api/.venv/Scripts/pytest.exe -c apps/api/pytest.ini apps/api/tests -v
+---
+
+## 🧪 Testing & Validation
+
+DaoStream includes a complete automated test suite covering models, providers, security audit, and playback resolution:
+
+```bash
+# Run backend test suite (65 tests)
+apps/api/.venv/Scripts/pytest.exe apps/api/tests -v
+```
+
+```bash
+# Test frontend production build
+npm run build --prefix apps/web
 ```
 
 ---
 
-## Legal & Compliance Boundary
+## 📂 Project Structure
 
-The application strictly integrates with media sources, APIs, metadata services, storage locations, and streaming providers that the user is authorized to access. It does **NOT** perform web scraping, authentication bypasses, DRM circumvention, or unauthorized stream hotlinking.
+```text
+DaoStream/
+├── .env.example               # Safe environment variable template
+├── .gitignore                 # Comprehensive git exclusion rules
+├── docker-compose.prod.yml    # Production container orchestration
+├── docker-compose.yml         # Development container setup
+├── apps/
+│   ├── api/                   # FastAPI Backend
+│   │   ├── src/
+│   │   │   ├── api/v1/        # Endpoints (auth, media, library, playback)
+│   │   │   ├── core/          # Security, config, sanitization
+│   │   │   ├── db/            # SQLAlchemy async session & migrations
+│   │   │   ├── models/        # Database models (User, Media, Library)
+│   │   │   ├── providers/     # TMDB, OpenLibrary, and Local disk adapters
+│   │   │   └── services/      # Resolver service & metadata caching
+│   │   └── tests/             # 65 automated integration & unit tests
+│   └── web/                   # React 18 + Vite Frontend
+│       ├── src/
+│       │   ├── components/    # VideoPlayer, BookReader, Modals, Navbar
+│       │   ├── context/       # AuthContext & Session management
+│       │   ├── pages/         # Movies, Series, Anime, Books, Library
+│       │   └── services/      # Frontend API client
+├── docs/                      # Architectural & Deployment manuals
+└── scripts/                   # Database maintenance & test runners
+```
 
 ---
 
-## Documentation
+## 🔒 Security & Privacy
 
-- 📖 [Deployment & Operations Guide](docs/deployment.md) — Docker Compose, Nginx, SSL/TLS, and backups.
-- 🏗️ [Architecture Deep-Dive](docs/architecture.md) — System internals, provider lifecycle, and streaming engine.
-- 💻 [Local Installation Guide](docs/installation.md) — Detailed bare-metal setup for Windows, Linux, and macOS.
-- 🔌 [Provider Development Guide](docs/providers.md) — Creating new metadata, streaming, and book provider adapters.
-- 🗺️ [Master 20-Phase Roadmap](MEDIA_HUB_ROADMAP.md) — Complete engineering blueprint and phase status.
+- **Safe By Default:** `.env`, databases (`.db`), media caches, and private tokens are strictly ignored by `.gitignore`.
+- **Zero Mock Policy:** All demo items have been completely purged; all catalogs dynamically reflect real TMDB data and your personal indexed files.
+- **SSRF Defense:** Outbound provider requests are validated against forbidden private IP ranges (`10.0.0.0/8`, `192.168.0.0/16`, `127.0.0.0/8`, AWS metadata IPs).
+
+---
+
+## 📜 License
+
+Distributed under the **MIT License**. See `LICENSE` for more information.

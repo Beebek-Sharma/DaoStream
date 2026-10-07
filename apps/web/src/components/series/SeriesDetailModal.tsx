@@ -30,29 +30,13 @@ export const SeriesDetailModal: React.FC<SeriesDetailModalProps> = ({
         {
           season_number: 1,
           title: 'Season 1',
-          episodes: [
-            {
-              id: 'ep-1',
-              episode_number: 1,
-              title: 'First Breath of the Wind',
-              overview: 'Master Ren leaves his secluded shrine after forty years to face the encroaching rift.',
-              duration_minutes: 48,
-            },
-            {
-              id: 'ep-2',
-              episode_number: 2,
-              title: 'Echoes in the Citadel',
-              overview: 'The royal guards investigate an anomalous surge in spiritual energy.',
-              duration_minutes: 52,
-            },
-            {
-              id: 'ep-3',
-              episode_number: 3,
-              title: 'The Fractured Gate',
-              overview: 'A sudden rift collapse traps an envoy team beneath the mountain sanctuary.',
-              duration_minutes: 45,
-            },
-          ],
+          episodes: Array.from({ length: 8 }, (_, i) => ({
+            id: `${activeMedia.provider_media_id}-s1-e${i + 1}`,
+            episode_number: i + 1,
+            title: `Episode ${i + 1}`,
+            overview: `Episode ${i + 1} of ${activeMedia.title}`,
+            duration_minutes: 45,
+          })),
         },
       ];
 

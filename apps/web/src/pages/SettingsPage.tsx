@@ -17,8 +17,11 @@ import {
   Server,
   Database,
   Cpu,
+  AlertTriangle,
+  Lock,
 } from 'lucide-react';
 import { HealthIndicator } from '../components/common/HealthIndicator';
+import { useAuth } from '../context/AuthContext';
 import {
   fetchProviders,
   toggleProvider,
@@ -37,6 +40,7 @@ import {
 } from '../services/api';
 
 export const SettingsPage: React.FC = () => {
+  const { user, isAdmin, quickLoginAdmin, openAuthModal } = useAuth();
   const [activeTab, setActiveTab] = useState<'providers' | 'preferences' | 'storage' | 'diagnostics'>('providers');
   const [providers, setProviders] = useState<ProviderInfo[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -44,6 +48,7 @@ export const SettingsPage: React.FC = () => {
   const [apiKeyInput, setApiKeyInput] = useState<string>('');
   const [showKey, setShowKey] = useState<boolean>(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [localStatus, setLocalStatus] = useState<LocalStorageStatus | null>(null);
   const [scanning, setScanning] = useState<boolean>(false);
   const [scanSummary, setScanSummary] = useState<LocalScanSummary | null>(null);
@@ -85,11 +90,17 @@ export const SettingsPage: React.FC = () => {
 
   const loadDiagnostics = async () => {
     setLoadingDiags(true);
+    setErrorMessage(null);
     try {
       const data = await fetchSystemDiagnostics();
       setDiagnostics(data);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      if (err?.message?.includes('403') || err?.message?.includes('Admin privileges')) {
+        setErrorMessage('Administrator privileges required to access cluster diagnostics.');
+      } else {
+        setErrorMessage('Failed to load system diagnostics telemetry.');
+      }
     } finally {
       setLoadingDiags(false);
     }
@@ -97,17 +108,29 @@ export const SettingsPage: React.FC = () => {
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     if (activeTab === 'diagnostics') {
       loadDiagnostics();
     }
-  }, [activeTab]);
+  }, [activeTab, user]);
+
+  const handleElevateToAdmin = async () => {
+    try {
+      await quickLoginAdmin();
+      setStatusMessage('Switched to Administrator session (admin@mediahub.com)');
+      setTimeout(() => setStatusMessage(null), 4000);
+    } catch (err) {
+      setErrorMessage('Failed to switch to administrator account.');
+      setTimeout(() => setErrorMessage(null), 4000);
+    }
+  };
 
   const handleScanDirectories = async () => {
     setScanning(true);
     setScanSummary(null);
+    setErrorMessage(null);
     try {
       const summary = await scanLocalMedia();
       setScanSummary(summary);
@@ -115,16 +138,20 @@ export const SettingsPage: React.FC = () => {
       const updatedStatus = await fetchLocalStatus();
       setLocalStatus(updatedStatus);
       setTimeout(() => setStatusMessage(null), 4000);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      setStatusMessage('Filesystem scan failed.');
-      setTimeout(() => setStatusMessage(null), 4000);
+      const msg = err?.message?.includes('403')
+        ? 'Admin privileges required to trigger filesystem scanner. Switch to Administrator.'
+        : 'Filesystem scan failed.';
+      setErrorMessage(msg);
+      setTimeout(() => setErrorMessage(null), 5000);
     } finally {
       setScanning(false);
     }
   };
 
   const handleToggle = async (provider: ProviderInfo) => {
+    setErrorMessage(null);
     try {
       await toggleProvider(provider.id, !provider.is_enabled);
       setProviders(prev =>
@@ -132,12 +159,18 @@ export const SettingsPage: React.FC = () => {
       );
       setStatusMessage(`Updated ${provider.name}`);
       setTimeout(() => setStatusMessage(null), 3000);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      const msg = err?.message?.includes('403')
+        ? 'Admin privileges required to toggle media providers. Switch to Administrator.'
+        : `Failed to toggle ${provider.name}.`;
+      setErrorMessage(msg);
+      setTimeout(() => setErrorMessage(null), 5000);
     }
   };
 
   const handleSaveConfig = async (providerId: string) => {
+    setErrorMessage(null);
     try {
       await configureProvider(providerId, { api_key: apiKeyInput });
       setStatusMessage(`Saved credentials for ${providerId}`);
@@ -145,20 +178,29 @@ export const SettingsPage: React.FC = () => {
       setApiKeyInput('');
       loadData();
       setTimeout(() => setStatusMessage(null), 3000);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      const msg = err?.message?.includes('403')
+        ? 'Admin privileges required to save credentials. Switch to Administrator.'
+        : `Failed to configure ${providerId}.`;
+      setErrorMessage(msg);
+      setTimeout(() => setErrorMessage(null), 5000);
     }
   };
 
   const handleTestProvider = async (providerId: string) => {
     setTestingProviderId(providerId);
+    setErrorMessage(null);
     try {
       const res = await testProviderConnection(providerId);
       setStatusMessage(`Provider ${res.name} test: ${res.status.toUpperCase()}`);
       setTimeout(() => setStatusMessage(null), 3500);
-    } catch (err) {
-      setStatusMessage(`Test failed for provider ${providerId}`);
-      setTimeout(() => setStatusMessage(null), 3500);
+    } catch (err: any) {
+      const msg = err?.message?.includes('403')
+        ? 'Admin privileges required to ping provider links. Switch to Administrator.'
+        : `Test failed for provider ${providerId}`;
+      setErrorMessage(msg);
+      setTimeout(() => setErrorMessage(null), 5000);
     } finally {
       setTestingProviderId(null);
     }
@@ -167,6 +209,7 @@ export const SettingsPage: React.FC = () => {
   const handleSavePreferences = async (e: React.FormEvent) => {
     e.preventDefault();
     setSavingPrefs(true);
+    setErrorMessage(null);
     try {
       const updated = await updateUserPreferences(preferences);
       setPreferences(updated);
@@ -174,8 +217,8 @@ export const SettingsPage: React.FC = () => {
       setTimeout(() => setStatusMessage(null), 3500);
     } catch (err) {
       console.error(err);
-      setStatusMessage('Failed to update preferences.');
-      setTimeout(() => setStatusMessage(null), 3500);
+      setErrorMessage('Failed to update preferences.');
+      setTimeout(() => setErrorMessage(null), 4000);
     } finally {
       setSavingPrefs(false);
     }
@@ -201,10 +244,68 @@ export const SettingsPage: React.FC = () => {
         <HealthIndicator />
       </div>
 
+      {/* Authentication & Role Status Card */}
+      <div className={`p-4 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs transition-all ${
+        isAdmin
+          ? 'bg-emerald-500/10 border-emerald-500/25 text-emerald-300'
+          : 'bg-amber-500/10 border-amber-500/25 text-amber-300'
+      }`}>
+        <div className="flex items-center gap-3">
+          <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs ${
+            isAdmin ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+          }`}>
+            {isAdmin ? <Shield className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-on-surface">Active Session:</span>
+              <span className="font-mono text-on-surface-variant">{user?.email || 'Guest User'}</span>
+              <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider ${
+                isAdmin
+                  ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                  : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+              }`}>
+                {isAdmin ? 'Administrator (Full Access)' : 'Standard User (Read-Only)'}
+              </span>
+            </div>
+            <p className="text-[11px] text-on-surface-variant mt-0.5">
+              {isAdmin
+                ? 'Full cluster governance granted. You can configure providers, initiate disk indexing, and inspect live node diagnostics.'
+                : 'Local directory scans, provider credentials, and system diagnostics are protected under RBAC policy.'}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 self-start sm:self-auto flex-shrink-0">
+          {!isAdmin && (
+            <button
+              onClick={handleElevateToAdmin}
+              className="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-surface text-xs font-semibold shadow-md transition-all flex items-center gap-1.5"
+            >
+              <Shield className="w-3.5 h-3.5" />
+              <span>Switch to Administrator</span>
+            </button>
+          )}
+          <button
+            onClick={() => openAuthModal()}
+            className="px-3 py-1.5 rounded-xl bg-surface-container-high hover:bg-surface-container-highest border border-border-subtle text-xs text-on-surface-variant hover:text-on-surface transition-all"
+          >
+            Switch Account
+          </button>
+        </div>
+      </div>
+
       {statusMessage && (
         <div className="p-3.5 bg-primary/10 border border-primary/25 rounded-2xl text-xs text-primary font-mono flex items-center gap-2.5 shadow-glow-primary">
           <CheckCircle2 className="w-4 h-4 text-primary flex-shrink-0" />
           <span>{statusMessage}</span>
+        </div>
+      )}
+
+      {errorMessage && (
+        <div className="p-3.5 bg-rose-500/10 border border-rose-500/30 rounded-2xl text-xs text-rose-400 font-mono flex items-center gap-2.5 shadow-lg">
+          <AlertTriangle className="w-4 h-4 text-rose-400 flex-shrink-0" />
+          <span>{errorMessage}</span>
         </div>
       )}
 
@@ -628,6 +729,25 @@ export const SettingsPage: React.FC = () => {
               <span>Refresh Metrics</span>
             </button>
           </div>
+
+          {!isAdmin && (
+            <div className="p-6 rounded-2xl bg-surface-container-low border border-amber-500/30 text-amber-300 space-y-3 shadow-xl">
+              <div className="flex items-center gap-2.5 font-bold text-sm font-display">
+                <Lock className="w-5 h-5 text-amber-400" />
+                <span>Restricted Telemetry Endpoint (RBAC Protected)</span>
+              </div>
+              <p className="text-xs text-on-surface-variant leading-relaxed">
+                Hardware resource telemetry, internal cache metrics, and cluster node specifications require Administrator authorization.
+              </p>
+              <button
+                onClick={handleElevateToAdmin}
+                className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-surface text-xs font-semibold rounded-xl shadow-md transition-all inline-flex items-center gap-1.5"
+              >
+                <Shield className="w-3.5 h-3.5" />
+                <span>Elevate to Administrator (1-Click)</span>
+              </button>
+            </div>
+          )}
 
           {diagnostics && (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">

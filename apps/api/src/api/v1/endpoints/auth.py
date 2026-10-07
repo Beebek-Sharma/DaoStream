@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, or_
+from sqlalchemy import select, or_, func
 
 from src.db.session import get_db
 from src.core.security import get_password_hash, verify_password, create_access_token
@@ -36,11 +36,19 @@ async def register_user(
                 detail="Username is already taken",
             )
 
+    # Check if this is the very first user bootstrap
+    count_stmt = select(func.count(User.id))
+    total_users_res = await db.execute(count_stmt)
+    total_users = total_users_res.scalar_one() or 0
+
+    assigned_role = UserRole.ADMIN if total_users == 0 else UserRole.USER
+
     new_user = User(
         email=payload.email,
         username=payload.username,
         hashed_password=get_password_hash(payload.password),
-        role=payload.role or UserRole.USER,
+        role=assigned_role,
+        is_superuser=(total_users == 0),
         preferences=payload.preferences or {},
     )
     db.add(new_user)

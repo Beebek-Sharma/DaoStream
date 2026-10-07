@@ -43,9 +43,6 @@ class SourceResolverService:
         # Prioritize matching user's preferred quality
         if preferred_quality and source.quality.lower() == preferred_quality.lower():
             score += 50
-        # Direct streams prioritized over proxies
-        if source.is_direct:
-            score += 5
         # Subtitles availability bonus
         if source.subtitles:
             score += len(source.subtitles)

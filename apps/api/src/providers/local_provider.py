@@ -128,6 +128,8 @@ class LocalMediaProvider(MetadataProviderInterface, StreamingProviderInterface, 
         self,
         provider_media_id: str,
     ) -> Optional[NormalizedBookContent]:
+        if not (provider_media_id.startswith("local-") or provider_media_id.startswith("book-local-")):
+            return None
         return NormalizedBookContent(
             provider_id="local-media",
             book_id=provider_media_id,
@@ -148,4 +150,6 @@ class LocalMediaProvider(MetadataProviderInterface, StreamingProviderInterface, 
         provider_media_id: str,
         chapter_index: int,
     ) -> Optional[str]:
+        if not (provider_media_id.startswith("local-") or provider_media_id.startswith("book-local-")):
+            return None
         return "Local book content is loaded directly from local storage."

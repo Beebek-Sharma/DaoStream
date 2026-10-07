@@ -1,12 +1,15 @@
 import React from 'react';
-import { Search, User, Bell, HardDrive } from 'lucide-react';
+import { Search, User as UserIcon, Bell, HardDrive, Shield } from 'lucide-react';
 import { HealthIndicator } from '../common/HealthIndicator';
+import { useAuth } from '../../context/AuthContext';
 
 interface NavbarProps {
   onSearchClick?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({ onSearchClick }) => {
+  const { user, isAdmin, openAuthModal } = useAuth();
+
   return (
     <header className="h-16 border-b border-border-subtle bg-surface/85 backdrop-blur-xl sticky top-0 z-40 px-6 lg:px-8 flex items-center justify-between gap-4 shadow-[0_1px_8px_rgba(0,0,0,0.04)]">
       {/* Quick Search Trigger Input Button */}
@@ -52,20 +55,30 @@ export const Navbar: React.FC<NavbarProps> = ({ onSearchClick }) => {
 
         <div className="h-4 w-px bg-border-subtle hidden sm:block" />
 
-        {/* User Session */}
-        <div className="flex items-center gap-2.5 pl-1 cursor-pointer group">
-          <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-primary to-primary-light border border-border-subtle flex items-center justify-center text-on-primary font-bold text-xs shadow-glow-primary">
-            <User className="w-4 h-4 text-on-primary" />
+        {/* User Session interactive pill */}
+        <button
+          onClick={openAuthModal}
+          className="flex items-center gap-2.5 pl-1 text-left group hover:opacity-90 transition-opacity"
+          title="Account & Role Management"
+          type="button"
+        >
+          <div className={`w-8 h-8 rounded-full border flex items-center justify-center font-bold text-xs shadow-sm transition-all ${
+            isAdmin
+              ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+              : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+          }`}>
+            {user ? user.username.charAt(0).toUpperCase() : <UserIcon className="w-4 h-4 text-stone-400" />}
           </div>
           <div className="hidden xl:flex flex-col text-left">
-            <span className="font-sans text-xs font-semibold text-on-surface leading-tight group-hover:text-primary transition-colors">
-              Vault Admin
+            <span className="font-sans text-xs font-semibold text-on-surface leading-tight group-hover:text-primary transition-colors flex items-center gap-1">
+              {user ? user.username : 'Sign In'}
+              {isAdmin && <Shield className="w-3 h-3 text-amber-400" />}
             </span>
-            <span className="font-mono text-[10px] text-on-surface-variant">
-              Superuser
+            <span className="font-mono text-[10px] text-on-surface-variant uppercase tracking-wider">
+              {user ? (isAdmin ? 'Admin' : 'User') : 'Guest'}
             </span>
           </div>
-        </div>
+        </button>
       </div>
     </header>
   );

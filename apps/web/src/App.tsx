@@ -1,6 +1,8 @@
 import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AppShell } from './components/layout/AppShell';
+import { AuthProvider } from './context/AuthContext';
+import { AuthModal } from './components/auth/AuthModal';
 
 // Dynamic lazy-loaded page routes for code splitting
 const HomePage = lazy(() => import('./pages/HomePage').then(m => ({ default: m.HomePage })));
@@ -23,9 +25,11 @@ const PageLoadingFallback: React.FC = () => (
 
 export const App: React.FC = () => {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<AppShell />}>
+    <AuthProvider>
+      <AuthModal />
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<AppShell />}>
           <Route
             index
             element={
@@ -94,7 +98,8 @@ export const App: React.FC = () => {
         </Route>
       </Routes>
     </BrowserRouter>
-  );
+  </AuthProvider>
+);
 };
 
 export default App;

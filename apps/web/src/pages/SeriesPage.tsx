@@ -11,72 +11,6 @@ import {
 import { SeriesDetailModal } from '../components/series/SeriesDetailModal';
 import { VideoPlayer } from '../components/player/VideoPlayer';
 
-const SERIES_FIXTURES: MediaItem[] = [
-  {
-    provider_id: 'mock_media_provider',
-    provider_media_id: 'mock-s-1',
-    title: 'Chronicles of Aetheria',
-    media_type: 'series',
-    year: 2023,
-    overview: 'Ancient elemental dynasties clash across floating archipelagoes as natural resonance crystals deplete.',
-    poster_url: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=600&q=80',
-    backdrop_url: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=1280&q=80',
-    rating: 9.2,
-  },
-  {
-    provider_id: 'mock_media_provider',
-    provider_media_id: 'mock-s-2',
-    title: 'Aegis Protocol: Sublevel 4',
-    media_type: 'series',
-    year: 2024,
-    overview: 'In a sealed deep-ocean containment trench, an AI safety team investigates synthetic neural drift.',
-    poster_url: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=600&q=80',
-    backdrop_url: 'https://images.unsplash.com/photo-1514565131-fce0801e5785?w=1280&q=80',
-    rating: 8.9,
-  },
-  {
-    provider_id: 'mock_media_provider',
-    provider_media_id: 'mock-s-3',
-    title: 'The Starlight Archive',
-    media_type: 'series',
-    year: 2023,
-    overview: 'Historians decipher stellar telemetry recorded by ancestral dynasties across galactic civilizations.',
-    poster_url: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=600&q=80',
-    backdrop_url: 'https://images.unsplash.com/photo-1506703719100-a0f3a48c0f86?w=1280&q=80',
-    rating: 9.0,
-  },
-  {
-    provider_id: 'mock_media_provider',
-    provider_media_id: 'mock-s-4',
-    title: 'Neon Outpost: Neo-Tokyo',
-    media_type: 'series',
-    year: 2024,
-    overview: 'A street detective and a rogue cybernetic surgeon navigate black-market neural enhancements.',
-    poster_url: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=600&q=80',
-    rating: 8.7,
-  },
-  {
-    provider_id: 'mock_media_provider',
-    provider_media_id: 'mock-s-5',
-    title: 'Quantum Drift',
-    media_type: 'series',
-    year: 2022,
-    overview: 'A research crew on an orbital collider experience parallel timeline overlapping after an experiment goes critical.',
-    poster_url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&q=80',
-    rating: 8.6,
-  },
-  {
-    provider_id: 'mock_media_provider',
-    provider_media_id: 'mock-s-6',
-    title: 'The Silo Paradox',
-    media_type: 'series',
-    year: 2024,
-    overview: 'Thousands live in a giant subterranean bunker with strict regulations, unaware of what caused the planetary quarantine.',
-    poster_url: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&q=80',
-    rating: 9.3,
-  },
-];
-
 export const SeriesPage: React.FC = () => {
   const [seriesList, setSeriesList] = useState<MediaItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -93,22 +27,13 @@ export const SeriesPage: React.FC = () => {
 
   useEffect(() => {
     const fetchSeries = async () => {
+      setLoading(true);
       try {
         const results = await searchMedia('', 'series');
-        if (results && results.length > 0) {
-          const combined = [...results];
-          for (const item of SERIES_FIXTURES) {
-            if (!combined.some(c => c.provider_media_id === item.provider_media_id)) {
-              combined.push(item);
-            }
-          }
-          setSeriesList(combined);
-        } else {
-          setSeriesList(SERIES_FIXTURES);
-        }
+        setSeriesList(results || []);
       } catch (err) {
-        console.warn('Fallback series list:', err);
-        setSeriesList(SERIES_FIXTURES);
+        console.warn('Failed to fetch series catalog:', err);
+        setSeriesList([]);
       } finally {
         setLoading(false);
       }
@@ -122,68 +47,17 @@ export const SeriesPage: React.FC = () => {
     try {
       const details = await fetchMediaDetails(item.provider_media_id, 'series');
       setSelectedSeries(details);
-    } catch (err) {
-      console.warn('Fallback details for series:', err);
-      setSelectedSeries({
-        provider_id: item.provider_id,
-        provider_media_id: item.provider_media_id,
-        title: item.title,
-        media_type: 'series',
-        genres: ['Sci-Fi', 'Mystery', 'Drama'],
-        tags: ['orbital', 'neural-net', 'direct-play'],
-        overview: item.overview,
-        poster_url: item.poster_url,
-        backdrop_url: item.backdrop_url,
-        rating: item.rating,
-        total_seasons: 2,
-        seasons: [
-          {
-            season_number: 1,
-            title: 'Season 1: The Activation',
-            episodes: [
-              {
-                id: `${item.provider_media_id}-s1-e1`,
-                episode_number: 1,
-                title: 'Skyward Awakening',
-                overview: 'An outcast crystal technician uncovers an ancient subterranean resonance vault.',
-                duration_minutes: 54,
-              },
-              {
-                id: `${item.provider_media_id}-s1-e2`,
-                episode_number: 2,
-                title: 'Resonance Drift',
-                overview: 'The orbital guard tracks the harmonic frequency to the outer atmospheric ring.',
-                duration_minutes: 49,
-              },
-              {
-                id: `${item.provider_media_id}-s1-e3`,
-                episode_number: 3,
-                title: 'The Obsidian Vector',
-                overview: 'Encoded signals from deep orbit reveal a coordinate matrix spanning three planetary systems.',
-                duration_minutes: 58,
-              },
-            ],
-          },
-          {
-            season_number: 2,
-            title: 'Season 2: Convergence',
-            episodes: [
-              {
-                id: `${item.provider_media_id}-s2-e1`,
-                episode_number: 1,
-                title: 'Event Threshold',
-                overview: 'The secondary core initiates emergency containment as the resonance array reaches peak power.',
-                duration_minutes: 56,
-              },
-            ],
-          },
-        ],
-      });
+    } catch (err: any) {
+      console.error('Failed to load series details:', err);
+      setError(
+        err?.message || `Unable to load season details for "${item.title}". Please try again.`
+      );
     }
   };
 
   const handlePlayEpisode = async (seasonNumber: number, episodeNumber: number, epTitle: string) => {
     if (!selectedSeries) return;
+    setError(null);
     try {
       const playback = await resolvePlayback(
         selectedSeries.provider_media_id,
@@ -198,43 +72,11 @@ export const SeriesPage: React.FC = () => {
         currentSeason: seasonNumber,
         currentEpisode: episodeNumber,
       });
-    } catch (err) {
-      console.warn('Fallback demo playback for episode:', err);
-      setActivePlayback({
-        data: {
-          media_id: selectedSeries.provider_media_id,
-          media_type: 'series',
-          season_number: seasonNumber,
-          episode_number: episodeNumber,
-          primary_source: {
-            id: `${selectedSeries.provider_media_id}-e${episodeNumber}-1080p`,
-            title: `Episode ${episodeNumber} Master (1080p Direct)`,
-            quality: '1080p',
-            format: 'mp4',
-            url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
-            is_direct: true,
-            subtitles: [],
-          },
-          sources: [
-            {
-              id: `${selectedSeries.provider_media_id}-e${episodeNumber}-1080p`,
-              title: `Episode ${episodeNumber} Master (1080p Direct)`,
-              quality: '1080p',
-              format: 'mp4',
-              url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
-              is_direct: true,
-              subtitles: [],
-            },
-          ],
-          available_qualities: ['1080p'],
-          subtitles: [],
-          expires_in_seconds: 7200,
-        },
-        title: selectedSeries.title,
-        episodeTitle: `S${seasonNumber}:E${episodeNumber} - ${epTitle}`,
-        currentSeason: seasonNumber,
-        currentEpisode: episodeNumber,
-      });
+    } catch (err: any) {
+      console.error('Failed to resolve episode stream:', err);
+      setError(
+        err?.message || `Unable to resolve stream for Season ${seasonNumber}, Episode ${episodeNumber}.`
+      );
     }
   };
 
@@ -246,7 +88,7 @@ export const SeriesPage: React.FC = () => {
 
   const filteredSeries = seriesList.filter(s => {
     if (selectedFilter === 'all') return true;
-    if (selectedFilter === 'top_rated') return (s.rating || 0) >= 9.0;
+    if (selectedFilter === 'top_rated') return (s.rating || 0) >= 8.0;
     if (selectedFilter === 'recent') return (s.year || 0) >= 2024;
     return true;
   });
@@ -264,7 +106,7 @@ export const SeriesPage: React.FC = () => {
             Television Series
           </h1>
           <p className="text-sm text-on-surface-variant max-w-xl">
-            Browse multi-season television catalogs with intelligent episode progression, season selection, and source resolution inspectors.
+            Browse television catalogs with intelligent episode progression, season selection, and source resolution.
           </p>
         </div>
 
@@ -272,8 +114,8 @@ export const SeriesPage: React.FC = () => {
         <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
           {[
             { id: 'all', label: 'All Series' },
-            { id: 'top_rated', label: 'Top Rated (9.0+)' },
-            { id: 'recent', label: 'New Seasons (2024)' },
+            { id: 'top_rated', label: 'Top Rated (8.0+)' },
+            { id: 'recent', label: 'Recent Releases' },
           ].map(f => (
             <button
               key={f.id}
@@ -291,18 +133,34 @@ export const SeriesPage: React.FC = () => {
       </div>
 
       {error && (
-        <div className="p-3.5 bg-rose-500/10 border border-rose-500/20 rounded-xl text-xs text-rose-300 flex items-center gap-2">
-          <AlertCircle className="w-4 h-4 text-rose-400 flex-shrink-0" />
-          <span>{error}</span>
+        <div className="p-3.5 bg-rose-500/10 border border-rose-500/20 rounded-xl text-xs text-rose-300 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-rose-400 flex-shrink-0" />
+            <span>{error}</span>
+          </div>
+          <button
+            onClick={() => setError(null)}
+            className="text-rose-400 hover:text-rose-200 underline text-xs"
+          >
+            Dismiss
+          </button>
         </div>
       )}
 
       {/* Series Grid */}
       {loading ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-5">
-          {[1, 2, 3, 4, 5, 6].map(n => (
+          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(n => (
             <div key={n} className="aspect-[2/3] rounded-2xl bg-surface-container-high animate-pulse" />
           ))}
+        </div>
+      ) : filteredSeries.length === 0 ? (
+        <div className="text-center py-20 bg-surface-container-low/40 rounded-3xl border border-border-subtle p-8">
+          <Tv className="w-12 h-12 text-on-surface-variant/40 mx-auto mb-3" />
+          <p className="text-base font-semibold text-on-surface">No series found</p>
+          <p className="text-xs text-on-surface-variant mt-1">
+            Check your TMDB configuration in settings or explore other categories.
+          </p>
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-5">
@@ -310,22 +168,40 @@ export const SeriesPage: React.FC = () => {
             <div
               key={item.provider_media_id}
               onClick={() => handleOpenSeries(item)}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  handleOpenSeries(item);
+                }
+              }}
               className="group relative rounded-2xl overflow-hidden bg-surface-container-low border border-border-subtle hover:border-primary/50 transition-all duration-300 card-hover-lift flex flex-col shadow-lg cursor-pointer"
             >
               <div className="aspect-[2/3] relative overflow-hidden bg-surface-container-lowest">
-                <img
-                  src={item.poster_url || 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=600&q=80'}
-                  alt={item.title}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                />
-
-                {/* Rating Badge */}
-                {item.rating && (
-                  <div className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-lg bg-surface-container-highest/85 backdrop-blur-md border border-secondary/30 text-[11px] font-mono font-semibold text-secondary flex items-center gap-1">
-                    <Star className="w-3 h-3 fill-secondary text-secondary" />
-                    <span>{item.rating}</span>
+                {item.poster_url ? (
+                  <img
+                    src={item.poster_url}
+                    alt={item.title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    loading="lazy"
+                  />
+                ) : (
+                  <div className="w-full h-full flex flex-col items-center justify-center bg-surface-container p-4 text-center">
+                    <Tv className="w-8 h-8 text-on-surface-variant/40 mb-2" />
+                    <span className="text-[11px] text-on-surface-variant font-medium line-clamp-2">
+                      {item.title}
+                    </span>
                   </div>
                 )}
+
+                {/* Rating Badge */}
+                {item.rating ? (
+                  <div className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-lg bg-surface-container-highest/85 backdrop-blur-md border border-secondary/30 text-[11px] font-mono font-semibold text-secondary flex items-center gap-1">
+                    <Star className="w-3 h-3 fill-secondary text-secondary" />
+                    <span>{item.rating.toFixed(1)}</span>
+                  </div>
+                ) : null}
 
                 {/* Seasons Badge */}
                 <div className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-lg bg-surface-container-highest/85 backdrop-blur-md border border-primary/30 text-[10px] font-mono font-bold text-primary flex items-center gap-1">
@@ -388,4 +264,3 @@ export const SeriesPage: React.FC = () => {
     </div>
   );
 };
-

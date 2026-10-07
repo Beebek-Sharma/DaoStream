@@ -105,7 +105,14 @@ async def configure_provider(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Provider '{provider_id}' not found",
         )
-    provider.update_config(payload.config)
+    # Sanitize config values
+    sanitized_config = {}
+    for k, v in payload.config.items():
+        if isinstance(v, str):
+            sanitized_config[k] = v.strip()
+        else:
+            sanitized_config[k] = v
+    provider.update_config(sanitized_config)
     return {
         "provider_id": provider_id,
         "message": "Configuration updated successfully",

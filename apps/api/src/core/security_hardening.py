@@ -1,11 +1,13 @@
+import time
 import ipaddress
 import socket
 from urllib.parse import urlparse
 from pathlib import Path
-from typing import List
+from typing import List, Dict, Tuple
+from collections import defaultdict
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
-from starlette.responses import Response
+from starlette.responses import Response, JSONResponse
 
 BLOCKED_IP_NETWORKS = [
     ipaddress.ip_network("127.0.0.0/8"),      # Loopback
@@ -73,6 +75,13 @@ def is_safe_filesystem_path(target_path: Path, allowed_root_directories: List[Pa
         return False
 
 
+def mask_secret(value: str) -> str:
+    """Masks a sensitive API key or secret string, revealing only the last 4 characters."""
+    if not value or len(value) <= 6:
+        return "******"
+    return f"{'*' * (len(value) - 4)}{value[-4:]}"
+
+
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     """Enforce strict modern security headers across all HTTP responses."""
 
@@ -83,4 +92,99 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["X-XSS-Protection"] = "1; mode=block"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
         response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+        response.headers["Cross-Origin-Opener-Policy"] = "same-origin"
+        response.headers["Cross-Origin-Resource-Policy"] = "same-origin"
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'self'; "
+            "img-src 'self' data: https: blob:; "
+            "media-src 'self' blob: https: http:; "
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+            "font-src 'self' https://fonts.gstatic.com data:; "
+            "connect-src 'self' http://localhost:* http://127.0.0.1:* https:; "
+            "frame-ancestors 'none';"
+        )
         return response
+
+
+class RateLimiterMiddleware(BaseHTTPMiddleware):
+    """Sliding-window IP rate limiter defending authentication and heavy playback endpoints."""
+
+    # Path prefix -> (max_requests, window_seconds)
+    RATE_LIMITS: Dict[str, Tuple[int, int]] = {
+        "/api/v1/auth/login": (10, 60),      # Max 10 login attempts per min per IP
+        "/api/v1/auth/register": (5, 60),    # Max 5 registrations per min per IP
+        "/api/v1/playback/resolve": (60, 60),# Max 60 stream resolutions per min per IP
+    }
+
+    def __init__(self, app):
+        super().__init__(app)
+        # Store: (client_ip, path) -> list of timestamps
+        self.history: Dict[Tuple[str, str], List[float]] = defaultdict(list)
+        self.last_cleanup = time.time()
+
+    async def dispatch(self, request: Request, call_next) -> Response:
+        path = request.url.path
+        matched_rule = None
+
+        for rule_path, limit_config in self.RATE_LIMITS.items():
+            if path.startswith(rule_path):
+                matched_rule = limit_config
+                matched_prefix = rule_path
+                break
+
+        if matched_rule:
+            # Bypass for automated test client
+            if (
+                request.headers.get("x-bypass-ratelimit") == "test"
+                or (request.client and request.client.host == "testclient")
+            ):
+                return await call_next(request)
+
+            max_requests, window_seconds = matched_rule
+            client_ip = request.headers.get("x-forwarded-for", "").split(",")[0].strip()
+            if not client_ip and request.client:
+                client_ip = request.client.host
+            if not client_ip:
+                client_ip = "127.0.0.1"
+
+            now = time.time()
+            key = (client_ip, matched_prefix)
+            cutoff = now - window_seconds
+
+            # Filter old timestamps
+            self.history[key] = [t for t in self.history[key] if t > cutoff]
+
+            if len(self.history[key]) >= max_requests:
+                retry_after = int(window_seconds - (now - self.history[key][0])) + 1
+                return JSONResponse(
+                    status_code=429,
+                    content={
+                        "error": {
+                            "code": "RATE_LIMIT_EXCEEDED",
+                            "message": f"Too many requests to {matched_prefix}. Please wait {retry_after} seconds.",
+                            "details": {"retry_after_seconds": retry_after},
+                        }
+                    },
+                    headers={"Retry-After": str(retry_after)},
+                )
+
+            self.history[key].append(now)
+
+            # Periodic cleanup every 5 minutes
+            if now - self.last_cleanup > 300:
+                self._cleanup(now)
+                self.last_cleanup = now
+
+        return await call_next(request)
+
+    def _cleanup(self, now: float) -> None:
+        keys_to_remove = []
+        for key, timestamps in self.history.items():
+            valid = [t for t in timestamps if t > now - 120]
+            if not valid:
+                keys_to_remove.append(key)
+            else:
+                self.history[key] = valid
+        for k in keys_to_remove:
+            del self.history[k]

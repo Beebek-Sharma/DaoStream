@@ -18,7 +18,7 @@ router = APIRouter()
 
 @router.get("/search", response_model=List[NormalizedSearchResult])
 async def search_media(
-    query: str = Query(..., min_length=1, description="Search term"),
+    query: str = Query("", description="Search term (empty returns trending / popular)"),
     media_type: Optional[MediaType] = Query(None, description="Filter by media type"),
     limit: int = Query(20, ge=1, le=100),
     current_user: User = Depends(get_current_user),

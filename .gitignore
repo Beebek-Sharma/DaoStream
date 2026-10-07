@@ -1,7 +1,16 @@
 # Environments and Secrets
 .env
-.env*.local
+.env.*
 !.env.example
+*.pem
+*.key
+*.cert
+*.crt
+
+# Tooling and Agents
+.agents/
+.gemini/
+.turbo/
 
 # Python
 __pycache__/

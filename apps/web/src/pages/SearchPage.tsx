@@ -14,6 +14,7 @@ import {
   LayoutGrid,
   List as ListIcon,
   Zap,
+  AlertCircle,
 } from 'lucide-react';
 import {
   searchMedia,
@@ -49,6 +50,7 @@ export const SearchPage: React.FC = () => {
   } | null>(null);
   const [activeBook, setActiveBook] = useState<BookContent | null>(null);
   const [selectedSeries, setSelectedSeries] = useState<MediaDetails | null>(null);
+  const [playbackError, setPlaybackError] = useState<string | null>(null);
 
   const filters = [
     { id: 'all', label: 'All Media', icon: Layers, mediaType: undefined },
@@ -118,26 +120,34 @@ export const SearchPage: React.FC = () => {
   }, [query, activeFilter]);
 
   const handleActionClick = async (item: MediaItem) => {
+    setPlaybackError(null);
     if (item.media_type === 'movie') {
       try {
         const resolved = await resolvePlayback(item.provider_media_id, 'movie');
         setActiveVideo({ data: resolved, title: item.title });
-      } catch (err) {
+      } catch (err: any) {
         console.error('Failed to resolve movie:', err);
+        setPlaybackError(
+          err?.message || `Unable to start streaming "${item.title}". Please try again.`
+        );
       }
     } else if (item.media_type === 'series' || item.media_type === 'anime') {
       try {
         const details = await fetchMediaDetails(item.provider_media_id, item.media_type);
         setSelectedSeries(details);
-      } catch (err) {
+      } catch (err: any) {
         console.error('Failed to load series details:', err);
+        setPlaybackError(
+          err?.message || `Unable to load season details for "${item.title}".`
+        );
       }
     } else if (item.media_type === 'book') {
       try {
         const bookData = await fetchBookContent(item.provider_media_id);
         setActiveBook(bookData);
-      } catch (err) {
+      } catch (err: any) {
         console.error('Failed to load book:', err);
+        setPlaybackError(err?.message || `Unable to load book "${item.title}".`);
       }
     }
   };
@@ -294,6 +304,21 @@ export const SearchPage: React.FC = () => {
         </div>
       </section>
 
+      {playbackError && (
+        <div className="p-3.5 bg-rose-500/10 border border-rose-500/20 rounded-xl text-xs text-rose-300 flex items-center justify-between gap-2 z-10">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-rose-400 flex-shrink-0" />
+            <span>{playbackError}</span>
+          </div>
+          <button
+            onClick={() => setPlaybackError(null)}
+            className="text-rose-400 hover:text-rose-200 underline text-xs cursor-pointer"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+
       {/* 3. FEDERATED SEARCH RESULTS MATRIX */}
       <section className="relative z-10 flex flex-col gap-4">
         {loading ? (
@@ -447,13 +472,25 @@ export const SearchPage: React.FC = () => {
         <SeriesDetailModal
           details={selectedSeries}
           onClose={() => setSelectedSeries(null)}
-          onPlayEpisode={(epNumber, seasonNum, epTitle) => {
-            handleActionClick({
-              provider_id: selectedSeries.provider_id,
-              provider_media_id: selectedSeries.provider_media_id,
-              title: `${selectedSeries.title} - S${seasonNum}E${epNumber}${epTitle ? `: ${epTitle}` : ''}`,
-              media_type: 'movie',
-            });
+          onPlayEpisode={async (epNumber, seasonNum, epTitle) => {
+            try {
+              const playback = await resolvePlayback(
+                selectedSeries.provider_media_id,
+                'series',
+                seasonNum,
+                epNumber
+              );
+              setActiveVideo({
+                data: playback,
+                title: selectedSeries.title,
+                episodeTitle: `S${seasonNum}:E${epNumber}${epTitle ? ` - ${epTitle}` : ''}`,
+              });
+            } catch (err: any) {
+              console.error('Failed to resolve episode stream:', err);
+              setPlaybackError(
+                err?.message || `Unable to start playback for Season ${seasonNum}, Episode ${epNumber}.`
+              );
+            }
           }}
 
         />

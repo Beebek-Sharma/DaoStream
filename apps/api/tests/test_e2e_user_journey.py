@@ -6,11 +6,14 @@ from src.models.user import User, UserRole
 from src.core.security import get_password_hash, create_access_token
 
 
+import uuid
+
 @pytest.fixture
 async def e2e_user(session: AsyncSession) -> tuple[str, str]:
+    uid = uuid.uuid4().hex[:6]
     user = User(
-        email="journey_user@example.com",
-        username="journey_user",
+        email=f"journey_user_{uid}@example.com",
+        username=f"journey_{uid}",
         hashed_password=get_password_hash("password123"),
         role=UserRole.USER,
         is_active=True,
@@ -28,7 +31,7 @@ async def test_full_media_lifecycle_journey(client: TestClient, e2e_user: tuple[
     headers = {"Authorization": f"Bearer {token}"}
 
     # Step 1: Federated Search
-    search_res = client.get("/api/v1/media/search?query=Cosmic", headers=headers)
+    search_res = client.get("/api/v1/media/search?query=Inception&media_type=movie", headers=headers)
     assert search_res.status_code == 200
     search_data = search_res.json()
     assert len(search_data) > 0

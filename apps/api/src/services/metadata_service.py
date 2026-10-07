@@ -59,8 +59,9 @@ class MetadataService:
                     seen_keys.add(unique_key)
                     combined.append(item)
 
-        metadata_cache.set(cache_key, combined, ttl_seconds=180)
-        return combined[:limit]
+        results = combined[:limit]
+        metadata_cache.set(cache_key, results, ttl_seconds=180)
+        return results
 
     async def get_media_details(
         self,

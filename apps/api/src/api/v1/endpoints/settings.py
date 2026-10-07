@@ -14,7 +14,8 @@ from src.db.session import get_db
 from src.models.user import User
 from src.models.media import Media, MediaType
 from src.models.progress import WatchProgress, ReadingProgress
-from src.api.deps import get_current_user
+from src.api.deps import get_current_user, get_current_admin_user
+from src.core.sanitizer import sanitize_text
 from src.providers.registry import provider_registry
 from src.providers.capabilities import ProviderHealthStatus
 
@@ -87,8 +88,18 @@ async def update_user_preferences(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Update and persist user preferences."""
-    current_user.preferences = payload.model_dump()
+    """Update and persist user preferences with sanitized values."""
+    data = payload.model_dump()
+    data["preferred_quality"] = sanitize_text(data.get("preferred_quality", "1080p"), 20)
+    data["default_subtitle_language"] = sanitize_text(data.get("default_subtitle_language", "en"), 10)
+    data["reader_theme"] = sanitize_text(data.get("reader_theme", "obsidian"), 30)
+    data["reader_font_family"] = sanitize_text(data.get("reader_font_family", "sans"), 30)
+    if data.get("media_storage_path"):
+        data["media_storage_path"] = sanitize_text(data["media_storage_path"], 500)
+    if data.get("books_storage_path"):
+        data["books_storage_path"] = sanitize_text(data["books_storage_path"], 500)
+
+    current_user.preferences = data
     db.add(current_user)
     await db.commit()
     await db.refresh(current_user)
@@ -97,9 +108,10 @@ async def update_user_preferences(
 
 @router.get("/diagnostics", response_model=SystemDiagnosticsResponse)
 async def get_system_diagnostics(
+    admin_user: User = Depends(get_current_admin_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Compile exhaustive system diagnostics, provider health checks, and database metrics."""
+    """Compile exhaustive system diagnostics, provider health checks, and database metrics (admin only)."""
     # 1. Check provider health
     health_map = await provider_registry.check_all_health()
     providers_detail: list[ProviderHealthDetail] = []
@@ -174,8 +186,11 @@ async def get_system_diagnostics(
 
 
 @router.post("/providers/{provider_id}/test")
-async def test_provider_connection(provider_id: str):
-    """Execute live health test and connectivity check against specific provider."""
+async def test_provider_connection(
+    provider_id: str,
+    admin_user: User = Depends(get_current_admin_user),
+):
+    """Execute live health test and connectivity check against specific provider (admin only)."""
     provider = provider_registry.get(provider_id)
     if not provider:
         raise HTTPException(

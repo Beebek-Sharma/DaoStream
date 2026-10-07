@@ -58,6 +58,11 @@ def client():
 def setup_test_database():
     """Create schema in isolated test database and clean up file on completion."""
     TEST_DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+    if TEST_DB_PATH.exists():
+        try:
+            TEST_DB_PATH.unlink()
+        except Exception:
+            pass
 
     async def _create():
         async with test_engine.begin() as conn:

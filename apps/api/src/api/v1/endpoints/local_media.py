@@ -9,8 +9,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 
 from src.core.config import settings
+from src.core.sanitizer import sanitize_text
 from src.db.session import get_db
 from src.models.media import Media, MediaType, Book
+from src.models.user import User
+from src.api.deps import get_current_admin_user
 from src.services.local_scanner import (
     local_scanner_service,
     ScanResultSummary,
@@ -96,13 +99,16 @@ async def get_local_storage_status(db: AsyncSession = Depends(get_db)):
 @router.post("/scan", response_model=ScanResultSummary)
 async def scan_local_media_storage(
     payload: ScanRequest = ScanRequest(),
+    admin_user: User = Depends(get_current_admin_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Trigger recursive filesystem scan of media and books directories."""
+    """Trigger recursive filesystem scan of media and books directories (admin only)."""
+    cleaned_media_path = sanitize_text(payload.media_path) if payload.media_path else None
+    cleaned_books_path = sanitize_text(payload.books_path) if payload.books_path else None
     summary = await local_scanner_service.scan_directories(
         db=db,
-        media_path=payload.media_path,
-        books_path=payload.books_path,
+        media_path=cleaned_media_path,
+        books_path=cleaned_books_path,
     )
     return summary
 
