@@ -7,9 +7,11 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
+  Sparkles,
+  BookOpen,
+  Radio,
+  Volume2,
 } from 'lucide-react';
-
-
 import {
   searchMedia,
   fetchMediaDetails,
@@ -28,12 +30,16 @@ import {
 import { VideoPlayer } from '../components/player/VideoPlayer';
 import { SeriesDetailModal } from '../components/series/SeriesDetailModal';
 import { BookReader } from '../components/reader/BookReader';
+import { useAudio } from '../context/AudioContext';
 
 export const HomePage: React.FC = () => {
+  const { playTrack, currentTrack, isPlaying } = useAudio();
   const [featuredItem, setFeaturedItem] = useState<MediaItem | null>(null);
   const [trendingMovies, setTrendingMovies] = useState<MediaItem[]>([]);
   const [popularSeries, setPopularSeries] = useState<MediaItem[]>([]);
   const [popularAnime, setPopularAnime] = useState<MediaItem[]>([]);
+  const [featuredBooks, setFeaturedBooks] = useState<MediaItem[]>([]);
+  const [audioStations, setAudioStations] = useState<MediaItem[]>([]);
   const [continueWatchingList, setContinueWatchingList] = useState<any[]>([]);
   const [continueReadingList, setContinueReadingList] = useState<any[]>([]);
   const [watchlistIds, setWatchlistIds] = useState<Set<string>>(new Set());
@@ -53,12 +59,13 @@ export const HomePage: React.FC = () => {
 
     const loadHomeData = async () => {
       try {
-        const [moviesRes, seriesRes, animeRes, , watchProgRes, readProgRes, watchListRes] =
+        const [moviesRes, seriesRes, animeRes, booksRes, audioRes, watchProgRes, readProgRes, watchListRes] =
           await Promise.allSettled([
             searchMedia('', 'movie'),
             searchMedia('', 'series'),
             searchMedia('', 'anime'),
             searchMedia('', 'book'),
+            searchMedia('', 'audio'),
             fetchWatchProgress(),
             fetchReadingProgress(),
             fetchWatchlist(),
@@ -68,17 +75,21 @@ export const HomePage: React.FC = () => {
 
         const movies: MediaItem[] =
           moviesRes.status === 'fulfilled' && moviesRes.value ? moviesRes.value : [];
-
         const series: MediaItem[] =
           seriesRes.status === 'fulfilled' && seriesRes.value ? seriesRes.value : [];
-
         const anime: MediaItem[] =
           animeRes.status === 'fulfilled' && animeRes.value ? animeRes.value : [];
+        const books: MediaItem[] =
+          booksRes.status === 'fulfilled' && booksRes.value ? booksRes.value : [];
+        const audio: MediaItem[] =
+          audioRes.status === 'fulfilled' && audioRes.value ? audioRes.value : [];
 
         setTrendingMovies(movies);
         setPopularSeries(series);
         setPopularAnime(anime);
-        setFeaturedItem(movies[0] || series[0] || null);
+        setFeaturedBooks(books);
+        setAudioStations(audio);
+        setFeaturedItem(movies[0] || series[0] || anime[0] || null);
 
         // Continue watching items from database
         if (watchProgRes.status === 'fulfilled' && watchProgRes.value && watchProgRes.value.length > 0) {
@@ -518,7 +529,7 @@ export const HomePage: React.FC = () => {
           </div>
         </section>
 
-        {/* 5. THEMATIC DISCOVERY RAILS: SERIES & ANIME */}
+        {/* 5. THEMATIC DISCOVERY RAILS: TV SERIES */}
         <section className="flex flex-col gap-4">
           <div className="flex items-end justify-between">
             <div className="flex flex-col">
@@ -526,13 +537,13 @@ export const HomePage: React.FC = () => {
                 Multi-Season Sagas
               </span>
               <h2 className="font-display text-2xl text-on-surface font-bold tracking-tight">
-                Series & Anime
+                Featured TV Series
               </h2>
             </div>
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
-            {popularSeries.concat(popularAnime).map((show) => (
+            {popularSeries.slice(0, 6).map((show) => (
               <div
                 key={show.provider_media_id}
                 onClick={() => handleOpenDetails(show.provider_media_id, show.media_type)}
@@ -557,12 +568,10 @@ export const HomePage: React.FC = () => {
                     </div>
                   )}
 
-                  {/* Category Pill */}
                   <div className="absolute top-2 right-2 bg-surface-container-highest/90 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold text-secondary">
-                    {show.media_type.toUpperCase()}
+                    SERIES
                   </div>
 
-                  {/* Hover Quick Action */}
                   <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40">
                     <div className="w-11 h-11 rounded-full bg-secondary text-on-primary flex items-center justify-center shadow-glow-amber">
                       <Info className="w-5 h-5 text-surface-container-lowest" />
@@ -585,6 +594,214 @@ export const HomePage: React.FC = () => {
             ))}
           </div>
         </section>
+
+        {/* 6. SEASONAL JAPANESE ANIME */}
+        {popularAnime.length > 0 && (
+          <section className="flex flex-col gap-4">
+            <div className="flex items-end justify-between">
+              <div className="flex flex-col">
+                <span className="font-mono text-xs uppercase text-secondary tracking-wider font-bold flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-secondary" />
+                  Seasonal Japanese Animation
+                </span>
+                <h2 className="font-display text-2xl text-on-surface font-bold tracking-tight">
+                  Anime Universe
+                </h2>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
+              {popularAnime.slice(0, 6).map((anime) => (
+                <div
+                  key={anime.provider_media_id}
+                  onClick={() => handleOpenDetails(anime.provider_media_id, 'anime')}
+                  className="group flex flex-col bg-surface-container rounded-xl overflow-hidden border border-border-subtle hover:border-secondary/50 transition-all duration-200 cursor-pointer card-hover-lift shadow-md"
+                >
+                  <div className="relative aspect-[2/3] w-full overflow-hidden bg-surface-container-lowest">
+                    <img
+                      src={
+                        anime.poster_url ||
+                        'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=600&q=80'
+                      }
+                      alt={anime.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-transparent to-transparent opacity-80" />
+
+                    {anime.rating && (
+                      <div className="absolute top-2 left-2 flex items-center gap-1 bg-surface-container-high/90 backdrop-blur-md px-2 py-0.5 rounded text-[11px] font-mono font-bold text-secondary">
+                        <Star className="w-3 h-3 fill-secondary text-secondary" />
+                        {anime.rating.toFixed(1)}
+                      </div>
+                    )}
+
+                    <div className="absolute top-2 right-2 bg-secondary/90 text-on-secondary px-1.5 py-0.5 rounded text-[10px] font-mono font-bold">
+                      ANIME
+                    </div>
+
+                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40">
+                      <div className="w-11 h-11 rounded-full bg-secondary text-on-secondary flex items-center justify-center shadow-glow-secondary">
+                        <Play className="w-5 h-5 fill-current ml-0.5" />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-3 flex flex-col gap-1">
+                    <h3 className="font-display font-semibold text-sm text-on-surface truncate group-hover:text-secondary transition-colors">
+                      {anime.title}
+                    </h3>
+                    <div className="flex items-center justify-between text-xs text-on-surface-variant font-mono">
+                      <span>{anime.year || '2024'}</span>
+                      <span className="text-[10px] uppercase font-bold text-secondary">
+                        Simulcast
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* 7. WEB NOVELS & LITERATURE */}
+        {featuredBooks.length > 0 && (
+          <section className="flex flex-col gap-4">
+            <div className="flex items-end justify-between">
+              <div className="flex flex-col">
+                <span className="font-mono text-xs uppercase text-tertiary tracking-wider font-bold flex items-center gap-1.5">
+                  <BookOpen className="w-3.5 h-3.5 text-tertiary" />
+                  Cultivation, Xianxia & Epic Fiction
+                </span>
+                <h2 className="font-display text-2xl text-on-surface font-bold tracking-tight">
+                  Web Novels & Literature
+                </h2>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
+              {featuredBooks.slice(0, 6).map((book) => (
+                <div
+                  key={book.provider_media_id}
+                  onClick={() => handleOpenBook(book.provider_media_id)}
+                  className="group flex flex-col bg-surface-container rounded-xl overflow-hidden border border-border-subtle hover:border-tertiary/50 transition-all duration-200 cursor-pointer card-hover-lift shadow-md"
+                >
+                  <div className="relative aspect-[1/1.5] w-full overflow-hidden bg-surface-container-lowest">
+                    <img
+                      src={
+                        book.poster_url ||
+                        'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&q=80'
+                      }
+                      alt={book.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                    <div className="absolute inset-y-0 left-0 w-3 bg-gradient-to-r from-black/40 to-transparent pointer-events-none" />
+
+                    {book.rating && (
+                      <div className="absolute top-2 left-3 flex items-center gap-1 bg-surface-container-high/90 backdrop-blur-md px-2 py-0.5 rounded text-[11px] font-mono font-bold text-secondary">
+                        <Star className="w-3 h-3 fill-secondary text-secondary" />
+                        {book.rating.toFixed(1)}
+                      </div>
+                    )}
+
+                    <div className="absolute top-2 right-2 bg-tertiary/90 text-surface px-1.5 py-0.5 rounded text-[10px] font-mono font-bold">
+                      {book.provider_id === 'webnovel_provider' ? 'WEB NOVEL' : 'BOOK'}
+                    </div>
+
+                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40">
+                      <div className="w-11 h-11 rounded-full bg-tertiary text-surface flex items-center justify-center shadow-glow-tertiary">
+                        <BookOpen className="w-5 h-5 fill-surface ml-0.5" />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-3 flex flex-col gap-1">
+                    <h3 className="font-display font-semibold text-sm text-on-surface truncate group-hover:text-tertiary transition-colors">
+                      {book.title}
+                    </h3>
+                    <div className="flex items-center justify-between text-xs text-on-surface-variant font-mono">
+                      <span>{book.year || 'Ongoing'}</span>
+                      <span className="text-[10px] uppercase font-bold text-tertiary">
+                        Read
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* 8. CONTINUOUS AUDIO & LO-FI STATIONS */}
+        {audioStations.length > 0 && (
+          <section className="flex flex-col gap-4">
+            <div className="flex items-end justify-between">
+              <div className="flex flex-col">
+                <span className="font-mono text-xs uppercase text-secondary tracking-wider font-bold flex items-center gap-1.5">
+                  <Radio className="w-3.5 h-3.5 text-secondary" />
+                  Background Music & Focus Beats
+                </span>
+                <h2 className="font-display text-2xl text-on-surface font-bold tracking-tight">
+                  Audio & Music Stations
+                </h2>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+              {audioStations.slice(0, 4).map((station) => {
+                const isCurrent = currentTrack?.id === station.provider_media_id;
+                const isCurrentlyPlaying = isCurrent && isPlaying;
+                return (
+                  <div
+                    key={station.provider_media_id}
+                    onClick={() => {
+                      playTrack({
+                        id: station.provider_media_id,
+                        title: station.title,
+                        artist: station.original_title || 'Live Stream',
+                        poster_url: station.poster_url,
+                        stream_url: 'https://ice2.somafm.com/chill-128-mp3',
+                        bitrate: '128 kbps',
+                      });
+                    }}
+                    className={`group flex items-center gap-3.5 bg-surface-container rounded-xl overflow-hidden border p-3.5 transition-all duration-200 cursor-pointer card-hover-lift shadow-md ${
+                      isCurrent
+                        ? 'border-secondary bg-surface-container-high shadow-glow-secondary'
+                        : 'border-border-subtle hover:border-secondary/40'
+                    }`}
+                  >
+                    <div className="relative w-14 h-14 shrink-0 rounded-lg overflow-hidden bg-surface-container-lowest">
+                      <img
+                        src={station.poster_url}
+                        alt={station.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                      />
+                      <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                        {isCurrentlyPlaying ? (
+                          <Volume2 className="w-6 h-6 text-secondary animate-pulse" />
+                        ) : (
+                          <Play className="w-5 h-5 text-white fill-current ml-0.5" />
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex-1 min-w-0 flex flex-col justify-center">
+                      <span className="text-[10px] font-mono text-secondary uppercase font-bold flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-secondary animate-pulse" />
+                        LIVE 128K
+                      </span>
+                      <h4 className="font-display font-semibold text-sm text-on-surface truncate group-hover:text-secondary transition-colors">
+                        {station.title}
+                      </h4>
+                      <p className="text-xs text-on-surface-variant truncate">
+                        {station.original_title || 'Lo-Fi Chill'}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        )}
       </div>
 
       {/* MODAL 1: Interactive Custom Video Player */}

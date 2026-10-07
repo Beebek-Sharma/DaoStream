@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Sparkles, Play, Star, AlertCircle, Layers } from 'lucide-react';
+import { Sparkles, Play, Star, AlertCircle, Layers, Search, RefreshCw } from 'lucide-react';
 import {
   searchMedia,
   fetchMediaDetails,
@@ -11,80 +11,10 @@ import {
 import { SeriesDetailModal } from '../components/series/SeriesDetailModal';
 import { VideoPlayer } from '../components/player/VideoPlayer';
 
-const ANIME_FIXTURES: MediaItem[] = [
-  {
-    provider_id: 'mock_media_provider',
-    provider_media_id: 'mock-a-1',
-    title: 'Blade of the Celestial Wind',
-    original_title: '天風の刃 (Tenpū no Yaiba)',
-    media_type: 'anime',
-    year: 2024,
-    overview: 'A spirit swordsman traverses mystical mountain realms to seal cosmic rifts between immortals and humanity.',
-    poster_url: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=600&q=80',
-    backdrop_url: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=1280&q=80',
-    rating: 9.1,
-  },
-  {
-    provider_id: 'mock_media_provider',
-    provider_media_id: 'mock-a-2',
-    title: 'Cyber Samurai: Edge 2088',
-    original_title: '電脳侍 (Dennō Samurai)',
-    media_type: 'anime',
-    year: 2023,
-    overview: 'In neon Neo-Shinjuku, an augmented ronin protects an AI child holding keys to the metropolitan power grid.',
-    poster_url: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=600&q=80',
-    backdrop_url: 'https://images.unsplash.com/photo-1514565131-fce0801e5785?w=1280&q=80',
-    rating: 8.9,
-  },
-  {
-    provider_id: 'mock_media_provider',
-    provider_media_id: 'mock-a-3',
-    title: 'Spirit Realm Alchemist',
-    original_title: '霊界錬金術師 (Reikai Renkinjutsushi)',
-    media_type: 'anime',
-    year: 2024,
-    overview: 'Scholars in an arcane academy learn to transmute ethereal starlight into physical kinetic ward barriers.',
-    poster_url: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&q=80',
-    rating: 9.3,
-  },
-  {
-    provider_id: 'mock_media_provider',
-    provider_media_id: 'mock-a-4',
-    title: 'Chrono Resonance: Zero',
-    original_title: '時間共鳴 (Jikan Kyōmei)',
-    media_type: 'anime',
-    year: 2023,
-    overview: 'A team of high school timeline observers must prevent paradoxical loops from shattering reality.',
-    poster_url: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=600&q=80',
-    rating: 8.8,
-  },
-  {
-    provider_id: 'mock_media_provider',
-    provider_media_id: 'mock-a-5',
-    title: 'Ghost in the Shellcode',
-    original_title: '殻の中のコード (Karafuda no Kōdo)',
-    media_type: 'anime',
-    year: 2024,
-    overview: 'Tactical security specialists investigate autonomous android sabotage across orbital defense arrays.',
-    poster_url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&q=80',
-    rating: 9.0,
-  },
-  {
-    provider_id: 'mock_media_provider',
-    provider_media_id: 'mock-a-6',
-    title: 'Arcane Horizon',
-    original_title: '秘術の地平線 (Hijutsu no Chiheisen)',
-    media_type: 'anime',
-    year: 2022,
-    overview: 'Guild explorers journey across an endless sea of clouds to reach the floating garden of the ancient gods.',
-    poster_url: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&q=80',
-    rating: 8.7,
-  },
-];
-
 export const AnimePage: React.FC = () => {
   const [animeList, setAnimeList] = useState<MediaItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedFilter, setSelectedFilter] = useState<string>('all');
   const [selectedAnime, setSelectedAnime] = useState<MediaDetails | null>(null);
   const [activePlayback, setActivePlayback] = useState<{
@@ -96,82 +26,38 @@ export const AnimePage: React.FC = () => {
   } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchAnime = async () => {
-      try {
-        const results = await searchMedia('', 'anime');
-        if (results && results.length > 0) {
-          const combined = [...results];
-          for (const item of ANIME_FIXTURES) {
-            if (!combined.some(c => c.provider_media_id === item.provider_media_id)) {
-              combined.push(item);
-            }
-          }
-          setAnimeList(combined);
-        } else {
-          setAnimeList(ANIME_FIXTURES);
-        }
-      } catch (err) {
-        console.warn('Fallback anime list:', err);
-        setAnimeList(ANIME_FIXTURES);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const fetchAnime = async (query = '') => {
+    setLoading(true);
+    setError(null);
+    try {
+      const results = await searchMedia(query, 'anime');
+      setAnimeList(results || []);
+    } catch (err: any) {
+      console.error('Failed to load anime catalog:', err);
+      setError(err?.message || 'Unable to connect to Anime service. Please try again.');
+      setAnimeList([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchAnime();
   }, []);
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    fetchAnime(searchQuery);
+  };
 
   const handleOpenAnime = async (item: MediaItem) => {
     setError(null);
     try {
       const details = await fetchMediaDetails(item.provider_media_id, 'anime');
       setSelectedAnime(details);
-    } catch (err) {
-      console.warn('Fallback details for anime:', err);
-      setSelectedAnime({
-        provider_id: item.provider_id,
-        provider_media_id: item.provider_media_id,
-        title: item.title,
-        original_title: item.original_title,
-        media_type: 'anime',
-        genres: ['Anime', 'Action', 'Supernatural'],
-        tags: ['dual-audio', 'multi-sub', 'flac-audio'],
-        overview: item.overview,
-        poster_url: item.poster_url,
-        backdrop_url: item.backdrop_url,
-        rating: item.rating,
-        total_seasons: 1,
-        seasons: [
-          {
-            season_number: 1,
-            title: 'Season 1: Origin Arc',
-            episodes: [
-              {
-                id: `${item.provider_media_id}-s1-e1`,
-                episode_number: 1,
-                title: 'First Breath of Wind',
-                overview: 'The shrine keeper leaves secluded mountain sanctum after forty years of spiritual training.',
-                duration_minutes: 24,
-              },
-              {
-                id: `${item.provider_media_id}-s1-e2`,
-                episode_number: 2,
-                title: 'Silver Moon Rift',
-                overview: 'A sudden void portal manifests above the village lake during festival celebrations.',
-                duration_minutes: 25,
-              },
-              {
-                id: `${item.provider_media_id}-s1-e3`,
-                episode_number: 3,
-                title: 'The Celestial Blade Awakens',
-                overview: 'Drawing the ancient ancestral blade unleashes waves of purifying blue flame.',
-                duration_minutes: 24,
-              },
-            ],
-          },
-        ],
-      });
+    } catch (err: any) {
+      console.error('Error fetching anime details:', err);
+      setError('Could not load episode guide for this anime.');
     }
   };
 
@@ -187,47 +73,13 @@ export const AnimePage: React.FC = () => {
       setActivePlayback({
         data: playback,
         title: selectedAnime.title,
-        episodeTitle: `Episode ${episodeNumber}: ${epTitle}`,
+        episodeTitle: epTitle || `Episode ${episodeNumber}`,
         currentSeason: seasonNumber,
         currentEpisode: episodeNumber,
       });
-    } catch (err) {
-      console.warn('Fallback demo playback for anime episode:', err);
-      setActivePlayback({
-        data: {
-          media_id: selectedAnime.provider_media_id,
-          media_type: 'anime',
-          season_number: seasonNumber,
-          episode_number: episodeNumber,
-          primary_source: {
-            id: `${selectedAnime.provider_media_id}-e${episodeNumber}-1080p`,
-            title: `Episode ${episodeNumber} Master (Dual Audio 1080p)`,
-            quality: '1080p',
-            format: 'mp4',
-            url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4',
-            is_direct: true,
-            subtitles: [],
-          },
-          sources: [
-            {
-              id: `${selectedAnime.provider_media_id}-e${episodeNumber}-1080p`,
-              title: `Episode ${episodeNumber} Master (Dual Audio 1080p)`,
-              quality: '1080p',
-              format: 'mp4',
-              url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4',
-              is_direct: true,
-              subtitles: [],
-            },
-          ],
-          available_qualities: ['1080p'],
-          subtitles: [],
-          expires_in_seconds: 7200,
-        },
-        title: selectedAnime.title,
-        episodeTitle: `Episode ${episodeNumber}: ${epTitle}`,
-        currentSeason: seasonNumber,
-        currentEpisode: episodeNumber,
-      });
+    } catch (err: any) {
+      console.error('Playback resolution failed:', err);
+      setError('Stream servers currently unavailable for this episode.');
     }
   };
 
@@ -237,10 +89,10 @@ export const AnimePage: React.FC = () => {
     handlePlayEpisode(activePlayback.currentSeason, nextEpNum, `Episode ${nextEpNum}`);
   };
 
-  const filteredAnime = animeList.filter(a => {
+  const filteredAnime = animeList.filter((a) => {
     if (selectedFilter === 'all') return true;
-    if (selectedFilter === 'top_rated') return (a.rating || 0) >= 9.0;
-    if (selectedFilter === 'recent') return (a.year || 0) >= 2024;
+    if (selectedFilter === 'top_rated') return (a.rating || 0) >= 8.0;
+    if (selectedFilter === 'recent') return (a.year || 0) >= 2023;
     return true;
   });
 
@@ -251,35 +103,55 @@ export const AnimePage: React.FC = () => {
         <div className="space-y-2">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-secondary/10 border border-secondary/25 text-secondary text-xs font-mono tracking-wider uppercase">
             <Sparkles className="w-3.5 h-3.5" />
-            <span>Seasonal Animation • Dual Audio Passthrough</span>
+            <span>Seasonal Japanese Animation • Multi-Server HD Mirrors</span>
           </div>
           <h1 className="text-3xl sm:text-4xl font-display font-extrabold text-on-surface tracking-tight">
-            Anime Vault
+            Anime Universe
           </h1>
           <p className="text-sm text-on-surface-variant max-w-xl">
-            Stream seasonal Japanese animation with synchronized dual-audio Japanese/English tracks, lossless FLAC streams, and subtitle customizers.
+            Stream popular Japanese animation, seasonal broadcasts, and classic series with multi-server playback mirrors and full episode guides.
           </p>
         </div>
 
-        {/* Filter Buttons */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
-          {[
-            { id: 'all', label: 'All Catalog' },
-            { id: 'recent', label: '2024 Simulcasts' },
-            { id: 'top_rated', label: 'Top Rated (9.0+)' },
-          ].map(f => (
+        {/* Search Bar & Filter Buttons */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+          <form onSubmit={handleSearchSubmit} className="relative">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search anime title..."
+              className="w-full sm:w-64 pl-9 pr-4 py-2 bg-surface-container-low border border-border-subtle rounded-xl text-xs text-on-surface focus:outline-none focus:border-secondary transition-colors"
+            />
+            <Search className="w-4 h-4 text-on-surface-variant absolute left-3 top-2.5" />
+          </form>
+
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
+            {[
+              { id: 'all', label: 'All Anime' },
+              { id: 'recent', label: 'Recent (2023+)' },
+              { id: 'top_rated', label: 'Top Rated (8.0+)' },
+            ].map((f) => (
+              <button
+                key={f.id}
+                onClick={() => setSelectedFilter(f.id)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition-all border ${
+                  selectedFilter === f.id
+                    ? 'bg-secondary text-on-secondary border-secondary font-semibold shadow-glow-secondary'
+                    : 'bg-surface-container-low text-on-surface-variant border-border-subtle hover:border-secondary/40 hover:text-on-surface'
+                }`}
+              >
+                {f.label}
+              </button>
+            ))}
             <button
-              key={f.id}
-              onClick={() => setSelectedFilter(f.id)}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition-all border ${
-                selectedFilter === f.id
-                  ? 'bg-secondary text-on-secondary border-secondary font-semibold'
-                  : 'bg-surface-container-low text-on-surface-variant border-border-subtle hover:border-secondary/40 hover:text-on-surface'
-              }`}
+              onClick={() => fetchAnime(searchQuery)}
+              title="Refresh catalog"
+              className="p-2 rounded-xl bg-surface-container-low border border-border-subtle text-on-surface-variant hover:text-on-surface hover:border-secondary transition-colors"
             >
-              {f.label}
+              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-secondary' : ''}`} />
             </button>
-          ))}
+          </div>
         </div>
       </div>
 
@@ -293,13 +165,21 @@ export const AnimePage: React.FC = () => {
       {/* Anime Grid */}
       {loading ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-5">
-          {[1, 2, 3, 4, 5, 6].map(n => (
+          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((n) => (
             <div key={n} className="aspect-[2/3] rounded-2xl bg-surface-container-high animate-pulse" />
           ))}
         </div>
+      ) : filteredAnime.length === 0 ? (
+        <div className="py-20 text-center flex flex-col items-center justify-center space-y-3">
+          <Sparkles className="w-12 h-12 text-secondary/40 animate-pulse" />
+          <h3 className="text-base font-semibold text-on-surface">No anime found</h3>
+          <p className="text-xs text-on-surface-variant max-w-sm">
+            Try searching for another anime title like "Solo Leveling", "Demon Slayer", or "Frieren".
+          </p>
+        </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-5">
-          {filteredAnime.map(item => (
+          {filteredAnime.map((item) => (
             <div
               key={item.provider_media_id}
               onClick={() => handleOpenAnime(item)}
@@ -307,21 +187,25 @@ export const AnimePage: React.FC = () => {
             >
               <div className="aspect-[2/3] relative overflow-hidden bg-surface-container-lowest">
                 <img
-                  src={item.poster_url || 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=600&q=80'}
+                  src={
+                    item.poster_url ||
+                    'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=600&q=80'
+                  }
                   alt={item.title}
+                  loading="lazy"
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 />
 
                 {/* Sub / Dub Badge */}
                 <div className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-lg bg-surface-container-highest/85 backdrop-blur-md border border-tertiary/30 text-[10px] font-mono text-tertiary font-bold">
-                  SUB / DUB
+                  ANIME
                 </div>
 
                 {/* Rating Badge */}
                 {item.rating && (
                   <div className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-lg bg-surface-container-highest/85 backdrop-blur-md border border-secondary/30 text-[11px] font-mono font-semibold text-secondary flex items-center gap-1">
                     <Star className="w-3 h-3 fill-secondary text-secondary" />
-                    <span>{item.rating}</span>
+                    <span>{Number(item.rating).toFixed(1)}</span>
                   </div>
                 )}
 
@@ -331,7 +215,7 @@ export const AnimePage: React.FC = () => {
                     <Play className="w-5 h-5 fill-current ml-0.5" />
                   </div>
                   <span className="text-[11px] font-mono text-secondary font-medium tracking-wide">
-                    EXPLORE ARCS
+                    EXPLORE EPISODES
                   </span>
                 </div>
               </div>
@@ -349,13 +233,13 @@ export const AnimePage: React.FC = () => {
                   <div className="flex items-center gap-2 text-[11px] font-mono text-on-surface-variant mt-0.5">
                     {item.year && <span>{item.year}</span>}
                     <span>•</span>
-                    <span className="text-primary">Simulcast</span>
+                    <span className="text-secondary font-medium">Episodes Available</span>
                   </div>
                 </div>
 
                 <div className="w-full py-1.5 px-2.5 rounded-xl bg-surface-container-high group-hover:bg-secondary text-on-surface-variant group-hover:text-on-secondary text-[11px] font-medium flex items-center justify-center gap-1.5 transition-colors border border-border-subtle group-hover:border-secondary">
                   <Layers className="w-3 h-3" />
-                  <span>View Episodes</span>
+                  <span>View Seasons</span>
                 </div>
               </div>
             </div>
@@ -385,4 +269,3 @@ export const AnimePage: React.FC = () => {
     </div>
   );
 };
-

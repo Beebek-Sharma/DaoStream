@@ -18,7 +18,7 @@ export interface MediaItem {
   provider_media_id: string;
   title: string;
   original_title?: string;
-  media_type: 'movie' | 'series' | 'anime' | 'drama' | 'book';
+  media_type: 'movie' | 'series' | 'anime' | 'drama' | 'book' | 'audio';
   year?: number;
   poster_url?: string;
   backdrop_url?: string;

@@ -128,16 +128,33 @@ class TMDBProvider(MetadataProviderInterface, StreamingProviderInterface):
 
         is_empty_query = not query or not query.strip()
         if is_empty_query:
-            if media_type == MediaType.MOVIE:
+            if media_type == MediaType.ANIME:
+                endpoint = "/discover/tv"
+                auth_params = {
+                    "with_genres": "16",
+                    "with_original_language": "ja",
+                    "sort_by": "popularity.desc",
+                    "page": page,
+                    "language": self.config.get("language", "en-US"),
+                }
+            elif media_type == MediaType.MOVIE:
                 endpoint = "/trending/movie/week"
-            elif media_type in [MediaType.SERIES, MediaType.ANIME, MediaType.DRAMA]:
+                auth_params = {
+                    "page": page,
+                    "language": self.config.get("language", "en-US"),
+                }
+            elif media_type in [MediaType.SERIES, MediaType.DRAMA]:
                 endpoint = "/trending/tv/week"
+                auth_params = {
+                    "page": page,
+                    "language": self.config.get("language", "en-US"),
+                }
             else:
                 endpoint = "/trending/all/week"
-            auth_params = {
-                "page": page,
-                "language": self.config.get("language", "en-US"),
-            }
+                auth_params = {
+                    "page": page,
+                    "language": self.config.get("language", "en-US"),
+                }
         else:
             endpoint = "/search/multi"
             if media_type == MediaType.MOVIE:
@@ -165,13 +182,24 @@ class TMDBProvider(MetadataProviderInterface, StreamingProviderInterface):
                 results: List[NormalizedSearchResult] = []
                 for item in data.get("results", []):
                     item_type = item.get("media_type")
-                    if endpoint in ["/search/movie", "/trending/movie/week"] or item_type == "movie":
+                    if media_type == MediaType.ANIME:
+                        m_type = MediaType.ANIME
+                        title = item.get("name") or item.get("title", "")
+                        orig_title = item.get("original_name") or item.get("original_title")
+                        date_str = item.get("first_air_date") or item.get("release_date")
+                        year = int(date_str[:4]) if date_str else None
+                    elif endpoint in ["/search/movie", "/trending/movie/week"] or item_type == "movie":
                         m_type = MediaType.MOVIE
                         title = item.get("title", "")
                         orig_title = item.get("original_title")
                         year = int(item.get("release_date")[:4]) if item.get("release_date") else None
                     else:
-                        m_type = MediaType.SERIES
+                        genre_ids = item.get("genre_ids", [])
+                        orig_lang = item.get("original_language", "")
+                        if 16 in genre_ids and orig_lang == "ja":
+                            m_type = MediaType.ANIME
+                        else:
+                            m_type = MediaType.SERIES
                         title = item.get("name", "")
                         orig_title = item.get("original_name")
                         year = int(item.get("first_air_date")[:4]) if item.get("first_air_date") else None
@@ -241,7 +269,7 @@ class TMDBProvider(MetadataProviderInterface, StreamingProviderInterface):
                         ep_count = s.get("episode_count", 0)
                         eps = [
                             NormalizedEpisode(
-                                id=f"tmdb:tv:{tmdb_id}:s{s_num}:e{e_idx}",
+                                id=f"tmdb:{tmdb_type}:{tmdb_id}:s{s_num}:e{e_idx}",
                                 episode_number=e_idx,
                                 title=f"Episode {e_idx}",
                                 overview=f"Episode {e_idx} of {title} (Season {s_num}).",
@@ -259,12 +287,18 @@ class TMDBProvider(MetadataProviderInterface, StreamingProviderInterface):
                             )
                         )
 
+                resolved_media_type = (
+                    MediaType.ANIME
+                    if (tmdb_type == "anime" or media_type == MediaType.ANIME or ("Animation" in genres and data.get("original_language") == "ja"))
+                    else (MediaType.MOVIE if is_movie else MediaType.SERIES)
+                )
+
                 return NormalizedMediaDetails(
                     provider_id=self.info.id,
                     provider_media_id=provider_media_id,
                     title=title,
                     original_title=data.get("original_title" if is_movie else "original_name"),
-                    media_type=MediaType.MOVIE if is_movie else MediaType.SERIES,
+                    media_type=resolved_media_type,
                     overview=data.get("overview"),
                     poster_url=f"{self.IMAGE_BASE_URL}{poster_path}" if poster_path else None,
                     backdrop_url=f"{self.BACKDROP_BASE_URL}{backdrop_path}" if backdrop_path else None,

@@ -2,6 +2,7 @@ import React from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { Navbar } from './Navbar';
+import { AudioPlayer } from '../player/AudioPlayer';
 
 export const AppShell: React.FC = () => {
   const navigate = useNavigate();
@@ -18,6 +19,9 @@ export const AppShell: React.FC = () => {
           <Outlet />
         </main>
       </div>
+
+      {/* Global Persistent Background Audio Player */}
+      <AudioPlayer />
     </div>
   );
 };

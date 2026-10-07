@@ -27,6 +27,8 @@ from src.providers.mock_provider import MockMediaHubProvider
 from src.providers.openlibrary_provider import OpenLibraryProvider
 from src.providers.tmdb_provider import TMDBProvider
 from src.providers.local_provider import LocalMediaProvider
+from src.providers.webnovel_provider import WebNovelProvider
+from src.providers.audio_provider import AudioProvider
 
 setup_logging(debug=settings.DEBUG)
 logger = logging.getLogger("media_hub.main")
@@ -101,6 +103,8 @@ async def lifespan(app: FastAPI):
     await seed_default_accounts()
 
     # 3. Register real external and local media providers
+    provider_registry.register(WebNovelProvider())
+    provider_registry.register(AudioProvider())
     provider_registry.register(OpenLibraryProvider())
     provider_registry.register(
         TMDBProvider(

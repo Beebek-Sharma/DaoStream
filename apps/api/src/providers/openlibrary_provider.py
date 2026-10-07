@@ -68,10 +68,11 @@ class OpenLibraryProvider(MetadataProviderInterface, BookProviderInterface):
             return []
 
         try:
+            effective_query = query.strip() if query and query.strip() else "fantasy"
             async with httpx.AsyncClient(timeout=self.timeout) as client:
                 resp = await client.get(
                     f"{self.BASE_URL}/search.json",
-                    params={"q": query, "page": page, "limit": limit},
+                    params={"q": effective_query, "page": page, "limit": limit},
                 )
                 if resp.status_code != 200:
                     logger.warning(f"OpenLibrary search returned status {resp.status_code}")

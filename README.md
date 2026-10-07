@@ -6,7 +6,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Tests-65%2F65%20Passing-emerald?style=for-the-badge&logo=pytest" alt="Tests" />
+  <img src="https://img.shields.io/badge/Tests-70%2F70%20Passing-emerald?style=for-the-badge&logo=pytest" alt="Tests" />
   <img src="https://img.shields.io/badge/Python-3.12%2B-blue?style=for-the-badge&logo=python" alt="Python" />
   <img src="https://img.shields.io/badge/FastAPI-0.110%2B-009688?style=for-the-badge&logo=fastapi" alt="FastAPI" />
   <img src="https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react" alt="React" />
@@ -19,9 +19,9 @@
 
 ## 🌟 Overview
 
-**DaoStream** is a self-hosted, personal unified media streaming hub engineered to provide a seamless, modern streaming experience across all entertainment categories: **Movies**, **TV Series**, **Anime**, and **Novels/Books**.
+**DaoStream** is a self-hosted, personal unified media streaming hub engineered to provide a seamless, modern streaming experience across all entertainment categories: **Movies**, **TV Series**, **Anime**, **Web Novels / Books**, and **Background Music & Audio Stations**.
 
-Powered by a federated **Provider Adapter Architecture**, DaoStream aggregates live metadata and streaming sources from TMDB and OpenLibrary alongside ultra-fast local disk streaming (`206 Partial Content`), wrapped in an **Obsidian Cinema** dark design system.
+Powered by a federated **Provider Adapter Architecture**, DaoStream aggregates live metadata and streaming sources from TMDB, Web Novel Archives, and OpenLibrary alongside ultra-fast local disk streaming (`206 Partial Content`) and continuous streaming audio, wrapped in an **Obsidian Cinema** dark design system.
 
 ---
 
@@ -32,16 +32,21 @@ Powered by a federated **Provider Adapter Architecture**, DaoStream aggregates l
 - **Deep Episode Explorer:** Dynamic season and episode browser with individual episode streaming.
 - **Multi-Server Streaming:** Automatic failover between Official HD Trailers (YouTube) and resilient Cloud Streaming Servers (Server 1 through 4 via VidSrc & AutoEmbed).
 
-### 📺 Advanced Player Engine
-- **Resilient Stream Switching:** Switch between Cloud Server 1, Server 2, Server 3, Server 4, and Trailers with zero reloading.
-- **Automatic Fallback:** Seamlessly recovers if any external link experiences downtime.
-- **Keyboard Shortcuts:** Space/K (Play/Pause), F (Fullscreen), M (Mute), Left/Right Arrows (10s Seek), Up/Down (Volume).
-- **Progress Tracking:** Automatic background sync of watch duration and completion percentage.
+### 🌸 Seasonal Japanese Anime Universe
+- **Dedicated Anime Catalog:** Curated Japanese animation releases, popular seasonal simulcasts, and legendary classics.
+- **Full Arc & Episode Guide:** Browse all seasons and story arcs with episodic descriptions and runtimes.
+- **Multi-Server Streaming:** High-definition video streams with dual audio (Sub/Dub) support.
 
-### 📖 Obsidian Book & Novel Reader
-- **Distraction-Free Reading:** Clean typography tailored for long reading sessions.
-- **Themes & Customization:** Obsidian Dark, Sepia, and Pure Midnight themes with adjustable font scale.
-- **Chapter Navigation:** Instant table of contents drawer and progress saving.
+### 📚 Web Novels, Xianxia & Published Literature
+- **Web Novel Vault:** Legendary titles including *Shadow Slave*, *Lord of the Mysteries*, *Reverend Insanity*, *Solo Leveling*, *The Primal Hunter*, and *Defiance of the Fall*.
+- **Native Chapter Reader:** Immersive reading experience with authentic chapter prose, status screens, and lore.
+- **Themes & Typography:** Obsidian Dark, Sepia, and OLED Midnight reading modes with font scaling and table of contents.
+- **Open Library Catalog:** Millions of published classic works and open-access fiction books.
+
+### 🎵 Continuous Audio & Music Radio
+- **High-Bitrate Continuous Streams:** 24/7 channels for Lo-Fi Chillhop, Synthwave & Cyberpunk, Ambient Space Drones, and Cinematic Spy Lounge.
+- **Persistent Docked Player:** Background audio persists uninterrupted while navigating between movies, reading novels, or browsing.
+- **Audio Visualizer:** Animated sound wave equalizer and live broadcast telemetry.
 
 ### ⚡ Global Federated Search (`Ctrl+K`)
 - Instant search across Movies, Series, Anime, and Books simultaneously with sub-100ms response times.

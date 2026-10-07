@@ -25,6 +25,7 @@ class MediaType(str, enum.Enum):
     ANIME = "anime"
     DRAMA = "drama"
     BOOK = "book"
+    AUDIO = "audio"
 
 
 class Media(Base, TimestampMixin):

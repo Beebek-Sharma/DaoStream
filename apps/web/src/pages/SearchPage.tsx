@@ -15,6 +15,8 @@ import {
   List as ListIcon,
   Zap,
   AlertCircle,
+  Sparkles,
+  Radio,
 } from 'lucide-react';
 import {
   searchMedia,
@@ -29,8 +31,10 @@ import {
 import { VideoPlayer } from '../components/player/VideoPlayer';
 import { SeriesDetailModal } from '../components/series/SeriesDetailModal';
 import { BookReader } from '../components/reader/BookReader';
+import { useAudio } from '../context/AudioContext';
 
 export const SearchPage: React.FC = () => {
+  const { playTrack } = useAudio();
   const [searchParams, setSearchParams] = useSearchParams();
   const initialQuery = searchParams.get('q') || 'Cyberpunk';
 
@@ -55,8 +59,10 @@ export const SearchPage: React.FC = () => {
   const filters = [
     { id: 'all', label: 'All Media', icon: Layers, mediaType: undefined },
     { id: 'movies', label: 'Movies', icon: Film, mediaType: 'movie' },
-    { id: 'series', label: 'Series & Anime', icon: Tv, mediaType: 'series' },
+    { id: 'series', label: 'Series', icon: Tv, mediaType: 'series' },
+    { id: 'anime', label: 'Anime', icon: Sparkles, mediaType: 'anime' },
     { id: 'books', label: 'Books & Novels', icon: BookOpen, mediaType: 'book' },
+    { id: 'audio', label: 'Music & Audio', icon: Radio, mediaType: 'audio' },
     { id: 'local', label: 'Local Vault Only', icon: HardDrive, mediaType: undefined },
   ];
 
@@ -148,6 +154,24 @@ export const SearchPage: React.FC = () => {
       } catch (err: any) {
         console.error('Failed to load book:', err);
         setPlaybackError(err?.message || `Unable to load book "${item.title}".`);
+      }
+    } else if (item.media_type === 'audio') {
+      try {
+        const playback = await resolvePlayback(item.provider_media_id, 'audio');
+        const primary = playback.primary_source || playback.sources[0];
+        if (primary) {
+          playTrack({
+            id: item.provider_media_id,
+            title: item.title,
+            artist: item.original_title || 'Audio Stream',
+            poster_url: item.poster_url,
+            stream_url: primary.url,
+            bitrate: primary.quality || '128 kbps',
+          });
+        }
+      } catch (err: any) {
+        console.error('Failed to resolve audio:', err);
+        setPlaybackError(err?.message || `Unable to start audio stream "${item.title}".`);
       }
     }
   };

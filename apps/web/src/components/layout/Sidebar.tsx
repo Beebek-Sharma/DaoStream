@@ -10,6 +10,8 @@ import {
   Settings,
   Layers,
   HardDrive,
+  Sparkles,
+  Radio,
 } from 'lucide-react';
 import { fetchProviders } from '../../services/api';
 
@@ -23,8 +25,10 @@ const navItems: NavItem[] = [
   { name: 'Home', path: '/', icon: Home },
   { name: 'Explore & Search', path: '/search', icon: Search },
   { name: 'Movies', path: '/movies', icon: Film },
-  { name: 'Series & Anime', path: '/series', icon: Tv },
+  { name: 'Series', path: '/series', icon: Tv },
+  { name: 'Anime', path: '/anime', icon: Sparkles },
   { name: 'Books & Novels', path: '/books', icon: BookOpen },
+  { name: 'Music & Audio', path: '/music', icon: Radio },
   { name: 'My Library', path: '/library', icon: Bookmark },
   { name: 'Settings', path: '/settings', icon: Settings },
 ];
@@ -150,7 +154,14 @@ export const Sidebar: React.FC = () => {
         className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-surface-container-low/95 border-t border-border-subtle flex items-center justify-around py-2 px-1 backdrop-blur-2xl"
         aria-label="Mobile Navigation"
       >
-        {navItems.slice(0, 5).concat(navItems.slice(6)).map((item) => {
+        {[
+          navItems[0], // Home
+          navItems[2], // Movies
+          navItems[4], // Anime
+          navItems[5], // Books & Novels
+          navItems[6], // Music & Audio
+          navItems[7], // Library
+        ].map((item) => {
           const Icon = item.icon;
           return (
             <NavLink
@@ -165,7 +176,7 @@ export const Sidebar: React.FC = () => {
               aria-label={item.name}
             >
               <Icon className="w-4 h-4 mb-0.5" aria-hidden="true" />
-              <span>{item.name}</span>
+              <span className="truncate max-w-[50px]">{item.name.split(' ')[0]}</span>
             </NavLink>
           );
         })}

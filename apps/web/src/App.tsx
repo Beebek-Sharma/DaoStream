@@ -2,6 +2,7 @@ import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AppShell } from './components/layout/AppShell';
 import { AuthProvider } from './context/AuthContext';
+import { AudioProvider } from './context/AudioContext';
 import { AuthModal } from './components/auth/AuthModal';
 
 // Dynamic lazy-loaded page routes for code splitting
@@ -10,6 +11,7 @@ const MoviesPage = lazy(() => import('./pages/MoviesPage').then(m => ({ default:
 const SeriesPage = lazy(() => import('./pages/SeriesPage').then(m => ({ default: m.SeriesPage })));
 const AnimePage = lazy(() => import('./pages/AnimePage').then(m => ({ default: m.AnimePage })));
 const BooksPage = lazy(() => import('./pages/BooksPage').then(m => ({ default: m.BooksPage })));
+const MusicPage = lazy(() => import('./pages/MusicPage').then(m => ({ default: m.MusicPage })));
 const SearchPage = lazy(() => import('./pages/SearchPage').then(m => ({ default: m.SearchPage })));
 const LibraryPage = lazy(() => import('./pages/LibraryPage').then(m => ({ default: m.LibraryPage })));
 const SettingsPage = lazy(() => import('./pages/SettingsPage').then(m => ({ default: m.SettingsPage })));
@@ -26,80 +28,90 @@ const PageLoadingFallback: React.FC = () => (
 export const App: React.FC = () => {
   return (
     <AuthProvider>
-      <AuthModal />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<AppShell />}>
-          <Route
-            index
-            element={
-              <Suspense fallback={<PageLoadingFallback />}>
-                <HomePage />
-              </Suspense>
-            }
-          />
-          <Route
-            path="search"
-            element={
-              <Suspense fallback={<PageLoadingFallback />}>
-                <SearchPage />
-              </Suspense>
-            }
-          />
-          <Route
-            path="movies"
-            element={
-              <Suspense fallback={<PageLoadingFallback />}>
-                <MoviesPage />
-              </Suspense>
-            }
-          />
-          <Route
-            path="series"
-            element={
-              <Suspense fallback={<PageLoadingFallback />}>
-                <SeriesPage />
-              </Suspense>
-            }
-          />
-          <Route
-            path="anime"
-            element={
-              <Suspense fallback={<PageLoadingFallback />}>
-                <AnimePage />
-              </Suspense>
-            }
-          />
-          <Route
-            path="books"
-            element={
-              <Suspense fallback={<PageLoadingFallback />}>
-                <BooksPage />
-              </Suspense>
-            }
-          />
-          <Route
-            path="library"
-            element={
-              <Suspense fallback={<PageLoadingFallback />}>
-                <LibraryPage />
-              </Suspense>
-            }
-          />
-          <Route
-            path="settings"
-            element={
-              <Suspense fallback={<PageLoadingFallback />}>
-                <SettingsPage />
-              </Suspense>
-            }
-          />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Route>
-      </Routes>
-    </BrowserRouter>
-  </AuthProvider>
-);
+      <AudioProvider>
+        <AuthModal />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<AppShell />}>
+              <Route
+                index
+                element={
+                  <Suspense fallback={<PageLoadingFallback />}>
+                    <HomePage />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="search"
+                element={
+                  <Suspense fallback={<PageLoadingFallback />}>
+                    <SearchPage />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="movies"
+                element={
+                  <Suspense fallback={<PageLoadingFallback />}>
+                    <MoviesPage />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="series"
+                element={
+                  <Suspense fallback={<PageLoadingFallback />}>
+                    <SeriesPage />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="anime"
+                element={
+                  <Suspense fallback={<PageLoadingFallback />}>
+                    <AnimePage />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="books"
+                element={
+                  <Suspense fallback={<PageLoadingFallback />}>
+                    <BooksPage />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="music"
+                element={
+                  <Suspense fallback={<PageLoadingFallback />}>
+                    <MusicPage />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="library"
+                element={
+                  <Suspense fallback={<PageLoadingFallback />}>
+                    <LibraryPage />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="settings"
+                element={
+                  <Suspense fallback={<PageLoadingFallback />}>
+                    <SettingsPage />
+                  </Suspense>
+                }
+              />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Route>
+          </Routes>
+        </BrowserRouter>
+      </AudioProvider>
+    </AuthProvider>
+  );
 };
 
 export default App;

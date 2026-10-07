@@ -13,6 +13,7 @@ class ProviderCapability(str, enum.Enum):
     STREAMING = "streaming"
     SUBTITLES = "subtitles"
     BOOKS = "books"
+    AUDIO = "audio"
     RECOMMENDATIONS = "recommendations"
 
 
