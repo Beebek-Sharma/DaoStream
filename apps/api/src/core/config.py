@@ -23,7 +23,7 @@ class Settings(BaseSettings):
 
     APP_NAME: str = "DaoStream"
     APP_ENV: str = "development"
-    APP_HOST: str = "127.0.0.1"
+    APP_HOST: str = "0.0.0.0"
     APP_PORT: int = 8000
     DEBUG: bool = True
     VERSION: str = "0.1.0"
@@ -37,7 +37,7 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "sqlite+aiosqlite:///./data/media_hub.db"
 
     # CORS
-    CORS_ORIGINS: str = "http://localhost:5173,http://127.0.0.1:5173"
+    CORS_ORIGINS: str = "http://localhost:5173,http://127.0.0.1:5173,http://192.168.2.4:5173"
 
     # Storage
     MEDIA_STORAGE_PATH: str = "./data/media"
