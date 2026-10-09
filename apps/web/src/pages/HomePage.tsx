@@ -50,6 +50,9 @@ export const HomePage: React.FC = () => {
     title: string;
     episodeTitle?: string;
     mediaId?: string;
+    mediaType?: string;
+    seasonNumber?: number;
+    episodeNumber?: number;
   } | null>(null);
   const [selectedSeries, setSelectedSeries] = useState<MediaDetails | null>(null);
   const [activeBook, setActiveBook] = useState<BookContent | null>(null);
@@ -138,10 +141,27 @@ export const HomePage: React.FC = () => {
         title,
         episodeTitle,
         mediaId,
+        mediaType,
+        seasonNumber,
+        episodeNumber,
       });
     } catch (err) {
       console.error('Failed to resolve stream:', err);
     }
+  };
+
+  const handleNextEpisode = () => {
+    if (!activeVideo || !activeVideo.mediaId || !activeVideo.episodeNumber) return;
+    const nextEp = activeVideo.episodeNumber + 1;
+    const season = activeVideo.seasonNumber || 1;
+    handlePlayMedia(
+      activeVideo.mediaId,
+      activeVideo.mediaType || 'series',
+      activeVideo.title,
+      season,
+      nextEp,
+      `S${season}:E${nextEp} - Episode ${nextEp}`
+    );
   };
 
   const handleOpenDetails = async (mediaId: string, mediaType: string) => {
@@ -820,6 +840,7 @@ export const HomePage: React.FC = () => {
           episodeTitle={activeVideo.episodeTitle}
           mediaId={activeVideo.mediaId}
           onClose={() => setActiveVideo(null)}
+          onNextEpisode={activeVideo.episodeNumber ? handleNextEpisode : undefined}
         />
       )}
 
@@ -828,6 +849,8 @@ export const HomePage: React.FC = () => {
         <SeriesDetailModal
           details={selectedSeries}
           onClose={() => setSelectedSeries(null)}
+          onToggleWatchlist={toggleWatchlist}
+          isWatchlisted={selectedSeries ? watchlistIds.has(selectedSeries.provider_media_id) : false}
           onPlayEpisode={(epNumber, seasonNum, epTitle) => {
             handlePlayMedia(
               selectedSeries.provider_media_id,
@@ -838,7 +861,6 @@ export const HomePage: React.FC = () => {
               `S${seasonNum}:E${epNumber}${epTitle ? ` - ${epTitle}` : ''}`
             );
           }}
-
         />
       )}
 
