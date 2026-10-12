@@ -58,6 +58,11 @@ apps/web/dist-ssr/
 *.sqlite
 *.sqlite3
 *.db
+*.db-wal
+*.db-shm
+*.db-journal
+*.sqlite-journal
+*.sqlite3-journal
 
 # Media Storage & Uploads
 data/
