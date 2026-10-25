@@ -1,4 +1,5 @@
-export const API_BASE = '/api/v1';
+const customApiUrl = (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_API_URL) ? String((import.meta as any).env.VITE_API_URL).replace(/\/+$/, '') : '';
+export const API_BASE = `${customApiUrl}/api/v1`;
 
 export interface ProviderInfo {
   id: string;

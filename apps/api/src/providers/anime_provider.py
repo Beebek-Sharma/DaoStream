@@ -1,9 +1,11 @@
 import logging
 import re
+import urllib.parse
 from typing import List, Optional, Dict, Any
 import httpx
 
 from src.core.config import settings
+from src.core.security_hardening import is_safe_external_url
 from src.providers.base import MetadataProviderInterface, StreamingProviderInterface
 from src.providers.capabilities import ProviderCapability, ProviderHealthStatus
 from src.providers.schemas import (
@@ -460,16 +462,25 @@ class AniListAnimeProvider(MetadataProviderInterface, StreamingProviderInterface
     ) -> Optional[NormalizedPlaybackSource]:
         """Attempt to query private/self-hosted Consumet API for direct .m3u8 HLS streams."""
         try:
-            # First, fetch title details for searching in Consumet
+            if not self.consumet_url:
+                return None
+
+            # SSRF guard: ensure consumet_url is safe to request
+            allow_local = getattr(settings, "APP_ENV", "development") == "development"
+            if not is_safe_external_url(self.consumet_url, allow_private_for_dev=allow_local):
+                logger.warning(f"Consumet URL blocked by SSRF protection: {self.consumet_url}")
+                return None
+
+            # Fetch title details for searching in Consumet
             details = await self.get_details(provider_media_id, MediaType.ANIME)
             if not details:
                 return None
 
-            anime_title = details.title
+            encoded_title = urllib.parse.quote(details.title, safe="")
             async with httpx.AsyncClient(timeout=3.5) as client:
                 # Search Consumet Gogoanime or Zoro provider
                 search_res = await client.get(
-                    f"{self.consumet_url.rstrip('/')}/anime/gogoanime/{anime_title}"
+                    f"{self.consumet_url.rstrip('/')}/anime/gogoanime/{encoded_title}"
                 )
                 if search_res.status_code != 200:
                     return None
@@ -480,10 +491,14 @@ class AniListAnimeProvider(MetadataProviderInterface, StreamingProviderInterface
 
                 first_match = results[0]
                 anime_slug = first_match.get("id")
+                if not anime_slug:
+                    return None
+
+                encoded_slug = urllib.parse.quote(str(anime_slug), safe="")
 
                 # Get episode stream
                 watch_res = await client.get(
-                    f"{self.consumet_url.rstrip('/')}/anime/gogoanime/watch/{anime_slug}-episode-{episode_number}"
+                    f"{self.consumet_url.rstrip('/')}/anime/gogoanime/watch/{encoded_slug}-episode-{episode_number}"
                 )
                 if watch_res.status_code != 200:
                     return None

@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from src.models.media import MediaType
 from src.models.user import User
-from src.api.deps import get_current_user
+from src.api.deps import get_optional_current_user
 from src.services.resolver_service import (
     source_resolver_service,
     ResolvedPlaybackResponse,
@@ -19,15 +19,20 @@ async def resolve_media_playback(
     season_number: Optional[int] = Query(None, description="Season number if series"),
     episode_number: Optional[int] = Query(None, description="Episode number if series"),
     preferred_quality: Optional[str] = Query(None, description="Preferred quality e.g. 1080p, 720p"),
-    current_user: User = Depends(get_current_user),
+    current_user: Optional[User] = Depends(get_optional_current_user),
 ) -> ResolvedPlaybackResponse:
     """Resolve and rank playable streams across active providers with automatic fallback."""
+    # If user preferences specify a quality and none provided in query, use preference
+    effective_quality = preferred_quality
+    if not effective_quality and current_user and current_user.preferences:
+        effective_quality = current_user.preferences.get("preferred_quality")
+
     response = await source_resolver_service.resolve_playback_sources(
         media_id=media_id,
         media_type=media_type,
         season_number=season_number,
         episode_number=episode_number,
-        preferred_quality=preferred_quality,
+        preferred_quality=effective_quality,
     )
 
     if not response.sources:

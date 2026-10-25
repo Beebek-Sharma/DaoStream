@@ -16,10 +16,13 @@ services:
       - APP_ENV=production
       - DEBUG=false
       - DATABASE_URL=${DATABASE_URL:-sqlite+aiosqlite:///./data/db/media_hub.db}
-      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-change_this_to_a_secure_random_production_secret_key_32_bytes}
+      - SECRET_KEY=${SECRET_KEY:-${JWT_SECRET_KEY:-change_this_to_a_secure_random_production_secret_key_32_bytes}}
       - MEDIA_STORAGE_PATH=/app/data/media
       - BOOKS_STORAGE_PATH=/app/data/books
       - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost,http://localhost:80,https://localhost}
+      - TMDB_API_KEY=${TMDB_API_KEY:-}
+      - TMDB_ACCESS_TOKEN=${TMDB_ACCESS_TOKEN:-}
+      - CONSUMET_API_URL=${CONSUMET_API_URL:-http://localhost:3000}
     volumes:
       - ./data/media:/app/data/media
       - ./data/books:/app/data/books

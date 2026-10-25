@@ -9,17 +9,28 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import Response, JSONResponse
 
+from src.core.config import settings
+
 BLOCKED_IP_NETWORKS = [
     ipaddress.ip_network("127.0.0.0/8"),      # Loopback
     ipaddress.ip_network("10.0.0.0/8"),       # Private class A
     ipaddress.ip_network("172.16.0.0/12"),    # Private class B
     ipaddress.ip_network("192.168.0.0/16"),   # Private class C
     ipaddress.ip_network("169.254.0.0/16"),   # Link-local / Cloud metadata (AWS/GCP/Azure)
+    ipaddress.ip_network("100.64.0.0/10"),    # Carrier-grade NAT
     ipaddress.ip_network("0.0.0.0/8"),        # Current network
     ipaddress.ip_network("::1/128"),          # IPv6 loopback
     ipaddress.ip_network("fc00::/7"),         # IPv6 unique local
     ipaddress.ip_network("fe80::/10"),        # IPv6 link-local
 ]
+
+BLOCKED_HOSTNAMES = {
+    "localhost",
+    "127.0.0.1",
+    "::1",
+    "metadata.google.internal",
+    "instance-data",
+}
 
 
 def is_safe_external_url(url: str, allow_private_for_dev: bool = False) -> bool:
@@ -32,6 +43,11 @@ def is_safe_external_url(url: str, allow_private_for_dev: bool = False) -> bool:
         hostname = parsed.hostname
         if not hostname:
             return False
+
+        # Explicitly block known internal/metadata hostnames
+        if hostname.lower() in BLOCKED_HOSTNAMES:
+            if not allow_private_for_dev:
+                return False
 
         # If allow_private_for_dev is enabled, allow local requests
         if allow_private_for_dev:
@@ -108,13 +124,19 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
 
 class RateLimiterMiddleware(BaseHTTPMiddleware):
-    """Sliding-window IP rate limiter defending authentication and heavy playback endpoints."""
+    """Process-local sliding-window rate limiter defending authentication, search, and playback endpoints.
+
+    Note: This limiter is process-local in-memory, requiring no external Redis service.
+    For horizontal multi-node deployments, rate limiting can alternatively be enforced at the reverse proxy (Nginx).
+    """
 
     # Path prefix -> (max_requests, window_seconds)
     RATE_LIMITS: Dict[str, Tuple[int, int]] = {
-        "/api/v1/auth/login": (10, 60),      # Max 10 login attempts per min per IP
-        "/api/v1/auth/register": (5, 60),    # Max 5 registrations per min per IP
-        "/api/v1/playback/resolve": (60, 60),# Max 60 stream resolutions per min per IP
+        "/api/v1/auth/login": (10, 60),        # Max 10 login attempts per min per IP
+        "/api/v1/auth/register": (5, 60),      # Max 5 registrations per min per IP
+        "/api/v1/playback/resolve": (60, 60),  # Max 60 stream resolutions per min per IP
+        "/api/v1/media/search": (60, 60),      # Max 60 searches per min per IP
+        "/api/v1/local/scan": (5, 60),         # Max 5 filesystem scans per min per IP
     }
 
     def __init__(self, app):
@@ -134,19 +156,21 @@ class RateLimiterMiddleware(BaseHTTPMiddleware):
                 break
 
         if matched_rule:
-            # Bypass for automated test client
-            if (
-                request.headers.get("x-bypass-ratelimit") == "test"
-                or (request.client and request.client.host == "testclient")
-            ):
+            # Bypass only for automated test runners (testclient or explicit test environment)
+            is_test_client = request.client and request.client.host == "testclient"
+            is_test_env = getattr(settings, "APP_ENV", "").lower() in ("test", "testing")
+            if is_test_client or (is_test_env and request.headers.get("x-bypass-ratelimit") == "test"):
                 return await call_next(request)
 
             max_requests, window_seconds = matched_rule
-            client_ip = request.headers.get("x-forwarded-for", "").split(",")[0].strip()
-            if not client_ip and request.client:
-                client_ip = request.client.host
-            if not client_ip:
-                client_ip = "127.0.0.1"
+
+            # Extract client IP securely (do not trust arbitrary X-Forwarded-For unless from local reverse proxy)
+            direct_ip = request.client.host if request.client else "127.0.0.1"
+            if direct_ip in ("127.0.0.1", "::1", "localhost") and request.headers.get("x-forwarded-for"):
+                forwarded = request.headers.get("x-forwarded-for").split(",")[0].strip()
+                client_ip = forwarded if forwarded else direct_ip
+            else:
+                client_ip = direct_ip
 
             now = time.time()
             key = (client_ip, matched_prefix)

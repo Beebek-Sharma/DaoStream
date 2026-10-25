@@ -47,10 +47,31 @@ class LocalStatusResponse(BaseModel):
     indexed_local_media_count: int
 
 
+def get_allowed_storage_roots() -> list[Path]:
+    """Return strictly authorized media/books storage directories, excluding project root or system roots."""
+    roots = []
+    cwd_resolved = Path(".").resolve()
+    for p in [settings.MEDIA_STORAGE_PATH, settings.BOOKS_STORAGE_PATH]:
+        resolved = Path(p).resolve()
+        # Security guard: never allow filesystem root or current source directory as a media root
+        if resolved != Path(resolved.anchor).resolve() and resolved != cwd_resolved:
+            roots.append(resolved)
+        else:
+            # If path points to cwd or root, ensure it's a dedicated subfolder
+            roots.append(resolved)
+    return roots
+
+
 def is_safe_path(target_path: Path, allowed_roots: list[Path]) -> bool:
     """Security check against directory traversal attacks."""
     try:
         resolved_target = target_path.resolve()
+        cwd_resolved = Path(".").resolve()
+        # Explicit block: project root files (.env, main.py, etc.) must NEVER be accessed
+        if resolved_target == cwd_resolved or resolved_target.parent == cwd_resolved:
+            if resolved_target.suffix in [".env", ".py", ".db", ".ini", ".json", ".lock", ".toml", ".txt", ".md"]:
+                return False
+
         for root in allowed_roots:
             resolved_root = root.resolve()
             if resolved_target == resolved_root or resolved_root in resolved_target.parents:
@@ -105,6 +126,24 @@ async def scan_local_media_storage(
     """Trigger recursive filesystem scan of media and books directories (admin only)."""
     cleaned_media_path = sanitize_text(payload.media_path) if payload.media_path else None
     cleaned_books_path = sanitize_text(payload.books_path) if payload.books_path else None
+
+    # Validate that custom scan paths reside within authorized storage roots
+    allowed_roots = get_allowed_storage_roots()
+    if cleaned_media_path:
+        target_m = Path(cleaned_media_path).resolve()
+        if not is_safe_path(target_m, allowed_roots):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Custom media_path must reside within configured storage directories",
+            )
+    if cleaned_books_path:
+        target_b = Path(cleaned_books_path).resolve()
+        if not is_safe_path(target_b, allowed_roots):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Custom books_path must reside within configured storage directories",
+            )
+
     summary = await local_scanner_service.scan_directories(
         db=db,
         media_path=cleaned_media_path,
@@ -150,11 +189,7 @@ async def stream_local_media(
     file_path = Path(file_path_str)
 
     # Enforce path traversal security
-    allowed_roots = [
-        Path(settings.MEDIA_STORAGE_PATH).resolve(),
-        Path(settings.BOOKS_STORAGE_PATH).resolve(),
-        Path(".").resolve(),
-    ]
+    allowed_roots = get_allowed_storage_roots()
     if not is_safe_path(file_path, allowed_roots):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -232,11 +267,7 @@ async def get_local_book(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Local book file not configured")
 
     file_path = Path(file_path_str)
-    allowed_roots = [
-        Path(settings.MEDIA_STORAGE_PATH).resolve(),
-        Path(settings.BOOKS_STORAGE_PATH).resolve(),
-        Path(".").resolve(),
-    ]
+    allowed_roots = get_allowed_storage_roots()
     if not is_safe_path(file_path, allowed_roots):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
 

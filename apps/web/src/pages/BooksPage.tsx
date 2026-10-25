@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BookOpen, Star, User, BookMarked, AlertCircle, FileText, Search, RefreshCw, Feather } from 'lucide-react';
+import { BookOpen, Star, User, BookMarked, AlertCircle, FileText, Search, RefreshCw, Feather, Sparkles } from 'lucide-react';
 import {
   searchMedia,
   fetchBookContent,
@@ -218,6 +218,29 @@ export const BooksPage: React.FC = () => {
               </div>
             );
           })}
+
+          {/* Coming Soon: Live External Novel Crawlers Tile */}
+          {(selectedFilter === 'all' || selectedFilter === 'webnovels') && (
+            <div className="rounded-2xl overflow-hidden bg-surface-container-low border border-dashed border-tertiary/30 p-5 flex flex-col justify-between items-center text-center aspect-[1/1.5] shadow-sm hover:border-tertiary/60 transition-colors">
+              <div className="w-12 h-12 rounded-2xl bg-tertiary/10 border border-tertiary/20 flex items-center justify-center text-tertiary mt-4">
+                <Sparkles className="w-6 h-6 animate-pulse" />
+              </div>
+              <div className="space-y-1.5 px-2">
+                <span className="text-[10px] font-mono uppercase tracking-wider text-tertiary font-bold px-2 py-0.5 rounded-full bg-tertiary/10 border border-tertiary/20">
+                  Coming Soon
+                </span>
+                <h4 className="text-xs font-display font-bold text-on-surface">
+                  Live Novel Crawlers
+                </h4>
+                <p className="text-[11px] text-on-surface-variant leading-relaxed">
+                  Direct scraping integrations with Wuxiaworld, RoyalRoad, and novel indexes are currently in active development.
+                </p>
+              </div>
+              <div className="w-full py-1.5 px-3 rounded-xl bg-surface-container-high text-on-surface-variant text-[11px] font-mono border border-border-subtle cursor-default">
+                API Under Construction
+              </div>
+            </div>
+          )}
         </div>
       )}
 

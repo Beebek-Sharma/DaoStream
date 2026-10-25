@@ -132,11 +132,18 @@ def create_application() -> FastAPI:
         openapi_url="/openapi.json" if settings.DEBUG else None,
     )
 
-    # CORS configuration
+    # CORS configuration: permit local dev/LAN regex in development; enforce explicit origins in production
+    is_dev = settings.APP_ENV == "development"
+    origin_regex = (
+        r"^https?://(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+)(:\d+)?$"
+        if is_dev
+        else None
+    )
+
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins_list,
-        allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+)(:\d+)?$",
+        allow_origin_regex=origin_regex,
         allow_credentials=True,
         allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD"],
         allow_headers=["Authorization", "Content-Type", "Accept", "Origin", "X-Requested-With"],

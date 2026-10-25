@@ -1,4 +1,5 @@
 import os
+import asyncio
 import logging
 from typing import List, Optional, Dict, Any
 import httpx
@@ -52,6 +53,50 @@ class TMDBProvider(MetadataProviderInterface, StreamingProviderInterface):
         else:
             params["api_key"] = key
         return params, headers
+
+    async def _fetch_json(
+        self,
+        endpoint: str,
+        extra_params: Optional[Dict[str, Any]] = None,
+        max_retries: int = 2,
+    ) -> Optional[Dict[str, Any]]:
+        """Execute HTTP request with connection timeouts, 429 backoff handling, and transient error retries."""
+        params, headers = self._get_auth(extra_params)
+        url = f"{self.BASE_URL}{endpoint}"
+        timeout = httpx.Timeout(8.0, connect=4.0)
+
+        for attempt in range(max_retries + 1):
+            try:
+                async with httpx.AsyncClient(timeout=timeout) as client:
+                    resp = await client.get(url, params=params, headers=headers)
+                    if resp.status_code == 200:
+                        return resp.json()
+                    elif resp.status_code == 429:
+                        retry_after = int(resp.headers.get("Retry-After", "1"))
+                        logger.warning(f"TMDB rate limit encountered (429). Retry after {retry_after}s.")
+                        if attempt < max_retries:
+                            await asyncio.sleep(min(retry_after, 2.0))
+                            continue
+                        return None
+                    elif resp.status_code in (502, 503, 504):
+                        logger.warning(f"TMDB transient error {resp.status_code} on attempt {attempt + 1}")
+                        if attempt < max_retries:
+                            await asyncio.sleep(0.5 * (2**attempt))
+                            continue
+                        return None
+                    else:
+                        logger.debug(f"TMDB request returned status {resp.status_code}")
+                        return None
+            except (httpx.ConnectTimeout, httpx.ReadTimeout, httpx.NetworkError) as exc:
+                logger.warning(f"TMDB connection/read error on attempt {attempt + 1}: {exc}")
+                if attempt < max_retries:
+                    await asyncio.sleep(0.5 * (2**attempt))
+                    continue
+                return None
+            except Exception as exc:
+                logger.warning(f"Unexpected TMDB request exception: {exc}")
+                return None
+        return None
 
     @property
     def info(self) -> ProviderInfo:
@@ -168,60 +213,53 @@ class TMDBProvider(MetadataProviderInterface, StreamingProviderInterface):
             }
 
         try:
-            params, headers = self._get_auth(auth_params)
-            async with httpx.AsyncClient(timeout=8.0) as client:
-                resp = await client.get(
-                    f"{self.BASE_URL}{endpoint}",
-                    params=params,
-                    headers=headers,
-                )
-                if resp.status_code != 200:
-                    return []
+            data = await self._fetch_json(endpoint, auth_params)
+            if not data:
+                return []
 
-                data = resp.json()
-                results: List[NormalizedSearchResult] = []
-                for item in data.get("results", []):
-                    item_type = item.get("media_type")
-                    if media_type == MediaType.ANIME:
+            results: List[NormalizedSearchResult] = []
+            for item in data.get("results", []):
+                item_type = item.get("media_type")
+                if media_type == MediaType.ANIME:
+                    m_type = MediaType.ANIME
+                    title = item.get("name") or item.get("title", "")
+                    orig_title = item.get("original_name") or item.get("original_title")
+                    date_str = item.get("first_air_date") or item.get("release_date")
+                    year = int(date_str[:4]) if date_str else None
+                elif endpoint in ["/search/movie", "/trending/movie/week"] or item_type == "movie":
+                    m_type = MediaType.MOVIE
+                    title = item.get("title", "")
+                    orig_title = item.get("original_title")
+                    year = int(item.get("release_date")[:4]) if item.get("release_date") else None
+                else:
+                    genre_ids = item.get("genre_ids", [])
+                    orig_lang = item.get("original_language", "")
+                    if 16 in genre_ids and orig_lang == "ja":
                         m_type = MediaType.ANIME
-                        title = item.get("name") or item.get("title", "")
-                        orig_title = item.get("original_name") or item.get("original_title")
-                        date_str = item.get("first_air_date") or item.get("release_date")
-                        year = int(date_str[:4]) if date_str else None
-                    elif endpoint in ["/search/movie", "/trending/movie/week"] or item_type == "movie":
-                        m_type = MediaType.MOVIE
-                        title = item.get("title", "")
-                        orig_title = item.get("original_title")
-                        year = int(item.get("release_date")[:4]) if item.get("release_date") else None
                     else:
-                        genre_ids = item.get("genre_ids", [])
-                        orig_lang = item.get("original_language", "")
-                        if 16 in genre_ids and orig_lang == "ja":
-                            m_type = MediaType.ANIME
-                        else:
-                            m_type = MediaType.SERIES
-                        title = item.get("name", "")
-                        orig_title = item.get("original_name")
-                        year = int(item.get("first_air_date")[:4]) if item.get("first_air_date") else None
+                        m_type = MediaType.SERIES
+                    title = item.get("name", "")
+                    orig_title = item.get("original_name")
+                    year = int(item.get("first_air_date")[:4]) if item.get("first_air_date") else None
 
-                    poster_path = item.get("poster_path")
-                    backdrop_path = item.get("backdrop_path")
+                poster_path = item.get("poster_path")
+                backdrop_path = item.get("backdrop_path")
 
-                    results.append(
-                        NormalizedSearchResult(
-                            provider_id=self.info.id,
-                            provider_media_id=f"tmdb:{m_type.value}:{item['id']}",
-                            title=title,
-                            original_title=orig_title,
-                            media_type=m_type,
-                            year=year,
-                            poster_url=f"{self.IMAGE_BASE_URL}{poster_path}" if poster_path else None,
-                            backdrop_url=f"{self.BACKDROP_BASE_URL}{backdrop_path}" if backdrop_path else None,
-                            overview=item.get("overview"),
-                            rating=item.get("vote_average"),
-                        )
+                results.append(
+                    NormalizedSearchResult(
+                        provider_id=self.info.id,
+                        provider_media_id=f"tmdb:{m_type.value}:{item['id']}",
+                        title=title,
+                        original_title=orig_title,
+                        media_type=m_type,
+                        year=year,
+                        poster_url=f"{self.IMAGE_BASE_URL}{poster_path}" if poster_path else None,
+                        backdrop_url=f"{self.BACKDROP_BASE_URL}{backdrop_path}" if backdrop_path else None,
+                        overview=item.get("overview"),
+                        rating=item.get("vote_average"),
                     )
-                return results[:limit]
+                )
+            return results[:limit]
 
         except Exception as exc:
             logger.error(f"Error querying TMDB search: {exc}")
@@ -242,75 +280,71 @@ class TMDBProvider(MetadataProviderInterface, StreamingProviderInterface):
         endpoint = "/movie" if tmdb_type == "movie" else "/tv"
 
         try:
-            params, headers = self._get_auth({
-                "language": self.config.get("language", "en-US"),
-                "append_to_response": "credits,videos",
-            })
-            async with httpx.AsyncClient(timeout=8.0) as client:
-                resp = await client.get(
-                    f"{self.BASE_URL}{endpoint}/{tmdb_id}",
-                    params=params,
-                    headers=headers,
-                )
-                if resp.status_code != 200:
-                    return None
+            data = await self._fetch_json(
+                f"{endpoint}/{tmdb_id}",
+                {
+                    "language": self.config.get("language", "en-US"),
+                    "append_to_response": "credits,videos",
+                },
+            )
+            if not data:
+                return None
 
-                data = resp.json()
-                is_movie = tmdb_type == "movie"
-                title = data.get("title" if is_movie else "name", "")
-                genres = [g["name"] for g in data.get("genres", [])]
-                poster_path = data.get("poster_path")
-                backdrop_path = data.get("backdrop_path")
+            is_movie = tmdb_type == "movie"
+            title = data.get("title" if is_movie else "name", "")
+            genres = [g["name"] for g in data.get("genres", [])]
+            poster_path = data.get("poster_path")
+            backdrop_path = data.get("backdrop_path")
 
-                seasons_dto: List[NormalizedSeason] = []
-                if not is_movie:
-                    for s in data.get("seasons", []):
-                        s_num = s.get("season_number", 1)
-                        ep_count = s.get("episode_count", 0)
-                        eps = [
-                            NormalizedEpisode(
-                                id=f"tmdb:{tmdb_type}:{tmdb_id}:s{s_num}:e{e_idx}",
-                                episode_number=e_idx,
-                                title=f"Episode {e_idx}",
-                                overview=f"Episode {e_idx} of {title} (Season {s_num}).",
-                            )
-                            for e_idx in range(1, ep_count + 1)
-                        ] if ep_count > 0 else []
-
-                        seasons_dto.append(
-                            NormalizedSeason(
-                                season_number=s_num,
-                                title=s.get("name"),
-                                overview=s.get("overview"),
-                                poster_url=f"{self.IMAGE_BASE_URL}{s['poster_path']}" if s.get("poster_path") else None,
-                                episodes=eps,
-                            )
+            seasons_dto: List[NormalizedSeason] = []
+            if not is_movie:
+                for s in data.get("seasons", []):
+                    s_num = s.get("season_number", 1)
+                    ep_count = s.get("episode_count", 0)
+                    eps = [
+                        NormalizedEpisode(
+                            id=f"tmdb:{tmdb_type}:{tmdb_id}:s{s_num}:e{e_idx}",
+                            episode_number=e_idx,
+                            title=f"Episode {e_idx}",
+                            overview=f"Episode {e_idx} of {title} (Season {s_num}).",
                         )
+                        for e_idx in range(1, ep_count + 1)
+                    ] if ep_count > 0 else []
 
-                resolved_media_type = (
-                    MediaType.ANIME
-                    if (tmdb_type == "anime" or media_type == MediaType.ANIME or ("Animation" in genres and data.get("original_language") == "ja"))
-                    else (MediaType.MOVIE if is_movie else MediaType.SERIES)
-                )
+                    seasons_dto.append(
+                        NormalizedSeason(
+                            season_number=s_num,
+                            title=s.get("name"),
+                            overview=s.get("overview"),
+                            poster_url=f"{self.IMAGE_BASE_URL}{s['poster_path']}" if s.get("poster_path") else None,
+                            episodes=eps,
+                        )
+                    )
 
-                return NormalizedMediaDetails(
-                    provider_id=self.info.id,
-                    provider_media_id=provider_media_id,
-                    title=title,
-                    original_title=data.get("original_title" if is_movie else "original_name"),
-                    media_type=resolved_media_type,
-                    overview=data.get("overview"),
-                    poster_url=f"{self.IMAGE_BASE_URL}{poster_path}" if poster_path else None,
-                    backdrop_url=f"{self.BACKDROP_BASE_URL}{backdrop_path}" if backdrop_path else None,
-                    genres=genres,
-                    rating=data.get("vote_average"),
-                    release_date=data.get("release_date" if is_movie else "first_air_date"),
-                    status=data.get("status"),
-                    duration_minutes=data.get("runtime") if is_movie else None,
-                    total_seasons=data.get("number_of_seasons") if not is_movie else None,
-                    total_episodes=data.get("number_of_episodes") if not is_movie else None,
-                    seasons=seasons_dto,
-                )
+            resolved_media_type = (
+                MediaType.ANIME
+                if (tmdb_type == "anime" or media_type == MediaType.ANIME or ("Animation" in genres and data.get("original_language") == "ja"))
+                else (MediaType.MOVIE if is_movie else MediaType.SERIES)
+            )
+
+            return NormalizedMediaDetails(
+                provider_id=self.info.id,
+                provider_media_id=provider_media_id,
+                title=title,
+                original_title=data.get("original_title" if is_movie else "original_name"),
+                media_type=resolved_media_type,
+                overview=data.get("overview"),
+                poster_url=f"{self.IMAGE_BASE_URL}{poster_path}" if poster_path else None,
+                backdrop_url=f"{self.BACKDROP_BASE_URL}{backdrop_path}" if backdrop_path else None,
+                genres=genres,
+                rating=data.get("vote_average"),
+                release_date=data.get("release_date" if is_movie else "first_air_date"),
+                status=data.get("status"),
+                duration_minutes=data.get("runtime") if is_movie else None,
+                total_seasons=data.get("number_of_seasons") if not is_movie else None,
+                total_episodes=data.get("number_of_episodes") if not is_movie else None,
+                seasons=seasons_dto,
+            )
         except Exception as exc:
             logger.error(f"Error querying TMDB details for {provider_media_id}: {exc}")
             return None

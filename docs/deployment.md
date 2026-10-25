@@ -1,12 +1,12 @@
 # Production Deployment & Operations Guide
 
-This guide details the production deployment, storage layout, database management, reverse proxy configuration, and maintenance procedures for the **Personal Unified Media Hub**.
+This guide details the production deployment, storage layout, database management, reverse proxy configuration, and maintenance procedures for **DaoStream** (Personal Unified Media Streaming Hub). For the quick-start guide, also see [DEPLOYMENT.md](file:///d:/projects/Media/DEPLOYMENT.md).
 
 ---
 
 ## 1. Quickstart (Docker Compose)
 
-The fastest and most reliable way to run Media Hub in production is using the production Docker Compose setup.
+The fastest and most reliable way to run DaoStream in production is using the production Docker Compose setup.
 
 ### Prerequisites
 - Docker Engine 24.0+
@@ -17,15 +17,15 @@ The fastest and most reliable way to run Media Hub in production is using the pr
 
 1. **Clone and Navigate:**
    ```bash
-   git clone https://github.com/your-username/media-hub.git
-   cd media-hub
+   git clone https://github.com/Beebek-Sharma/DaoStream.git
+   cd DaoStream
    ```
 
 2. **Configure Environment Variables:**
    ```bash
    cp .env.example .env
    ```
-   *Edit `.env` to define a strong `JWT_SECRET_KEY` (minimum 32 random bytes).*
+   *Edit `.env` to define a strong `SECRET_KEY` (minimum 32 random bytes, generated via `openssl rand -hex 32`).*
 
 3. **Start the Production Services:**
    ```bash

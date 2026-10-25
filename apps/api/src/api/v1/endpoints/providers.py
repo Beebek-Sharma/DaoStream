@@ -1,11 +1,11 @@
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 
 from src.providers.registry import provider_registry
 from src.providers.schemas import ProviderInfo
 from src.providers.capabilities import ProviderHealthStatus
-from src.api.deps import get_current_user, get_current_admin_user
+from src.api.deps import get_current_user, get_current_admin_user, get_optional_current_user
 from src.models.user import User
 
 router = APIRouter()
@@ -22,7 +22,7 @@ class ProviderToggleRequest(BaseModel):
 @router.get("", response_model=List[ProviderInfo])
 async def list_providers(
     enabled_only: bool = False,
-    current_user: User = Depends(get_current_user),
+    current_user: Optional[User] = Depends(get_optional_current_user),
 ) -> List[ProviderInfo]:
     """List all registered providers and their current status."""
     return provider_registry.list_all(enabled_only=enabled_only)
@@ -30,7 +30,7 @@ async def list_providers(
 
 @router.get("/health", response_model=Dict[str, ProviderHealthStatus])
 async def check_all_providers_health(
-    current_user: User = Depends(get_current_user),
+    current_user: Optional[User] = Depends(get_optional_current_user),
 ) -> Dict[str, ProviderHealthStatus]:
     """Check health across all registered providers."""
     return await provider_registry.check_all_health()
@@ -39,7 +39,7 @@ async def check_all_providers_health(
 @router.get("/{provider_id}", response_model=ProviderInfo)
 async def get_provider_details(
     provider_id: str,
-    current_user: User = Depends(get_current_user),
+    current_user: Optional[User] = Depends(get_optional_current_user),
 ) -> ProviderInfo:
     """Get metadata for a specific provider."""
     provider = provider_registry.get(provider_id)
@@ -56,7 +56,7 @@ async def get_provider_details(
 @router.get("/{provider_id}/health", response_model=Dict[str, Any])
 async def check_provider_health(
     provider_id: str,
-    current_user: User = Depends(get_current_user),
+    current_user: Optional[User] = Depends(get_optional_current_user),
 ) -> Dict[str, Any]:
     """Check health of a specific provider."""
     provider = provider_registry.get(provider_id)

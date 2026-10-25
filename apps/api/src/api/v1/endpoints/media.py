@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.db.session import get_db
 from src.models.media import MediaType
 from src.models.user import User
-from src.api.deps import get_current_user
+from src.api.deps import get_current_user, get_optional_current_user
 from src.services.metadata_service import metadata_service
 from src.providers.schemas import (
     NormalizedSearchResult,
@@ -21,7 +21,7 @@ async def search_media(
     query: str = Query("", description="Search term (empty returns trending / popular)"),
     media_type: Optional[MediaType] = Query(None, description="Filter by media type"),
     limit: int = Query(20, ge=1, le=100),
-    current_user: User = Depends(get_current_user),
+    current_user: Optional[User] = Depends(get_optional_current_user),
 ) -> List[NormalizedSearchResult]:
     """Federated search across all active metadata providers."""
     return await metadata_service.search_media(
@@ -36,7 +36,7 @@ async def get_media_details(
     media_id: str,
     media_type: Optional[MediaType] = Query(None, description="Optional media type hint"),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: Optional[User] = Depends(get_optional_current_user),
 ) -> NormalizedMediaDetails:
     """Retrieve full media metadata, either from DB or enabled providers."""
     details = await metadata_service.get_media_details(
@@ -82,7 +82,7 @@ async def sync_media_to_local_db(
 @router.get("/{media_id}/book", response_model=NormalizedBookContent)
 async def get_book_content(
     media_id: str,
-    current_user: User = Depends(get_current_user),
+    current_user: Optional[User] = Depends(get_optional_current_user),
 ) -> NormalizedBookContent:
     """Get book chapters and reading content from book providers."""
     content = await metadata_service.get_book_content(media_id)
@@ -98,7 +98,7 @@ async def get_book_content(
 async def get_book_chapter(
     media_id: str,
     chapter_index: int,
-    current_user: User = Depends(get_current_user),
+    current_user: Optional[User] = Depends(get_optional_current_user),
 ):
     """Get readable text content for a specific chapter."""
     text = await metadata_service.get_chapter_text(media_id, chapter_index)
