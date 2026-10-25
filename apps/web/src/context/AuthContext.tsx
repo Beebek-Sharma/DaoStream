@@ -51,16 +51,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
 
-    // Auto-bootstrap demo session for frictionless button access
-    try {
-      const auth = await loginUser('demo', 'DemoPass123!');
-      setUser(auth.user);
-      setTokenState(auth.access_token);
-    } catch (err) {
-      console.warn('Auto demo login unavailable:', err);
-    } finally {
-      setIsLoading(false);
-    }
+    setUser(null);
+    setTokenState(null);
+    setIsLoading(false);
   }, []);
 
   useEffect(() => {

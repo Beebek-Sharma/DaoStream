@@ -4,7 +4,6 @@ import {
   Play,
   Star,
   Layers,
-  HardDrive,
   List,
   LayoutGrid,
   Search,
@@ -362,9 +361,9 @@ export const SeriesDetailModal: React.FC<SeriesDetailModalProps> = ({
 
           {/* Quick info right side */}
           <div className="hidden lg:flex items-center gap-2 text-xs font-mono text-on-surface-variant">
-            <span>Origin:</span>
-            <span className="text-on-surface font-semibold uppercase">
-              {activeMedia.provider_id === 'local-media' ? 'Local Storage' : 'Federated Hub'}
+            <span>Source:</span>
+            <span className="text-on-surface font-semibold">
+              {activeMedia.provider_id === 'local-media' ? 'Local Library' : 'Online Stream'}
             </span>
           </div>
         </div>
@@ -721,45 +720,31 @@ export const SeriesDetailModal: React.FC<SeriesDetailModalProps> = ({
                   </div>
                 </div>
 
-                {/* Audio & Network Protocols */}
+                {/* Audio & Stream Specifications */}
                 <div className="bg-surface-container p-5 rounded-xl border border-border-subtle space-y-3">
                   <div className="flex items-center gap-2 border-b border-border-subtle pb-2.5">
-                    <HardDrive className="w-4 h-4 text-secondary" />
+                    <Film className="w-4 h-4 text-primary" />
                     <h3 className="font-display font-bold text-xs text-on-surface uppercase tracking-wider">
-                      Cluster & Network Delivery
+                      Audio & Playback Specifications
                     </h3>
                   </div>
 
                   <div className="space-y-2 font-mono text-xs">
                     <div className="flex justify-between">
                       <span className="text-on-surface-variant">Audio Channels</span>
-                      <span className="text-tertiary font-semibold">Dolby Atmos / 5.1 Surround</span>
+                      <span className="text-tertiary font-semibold">Stereo / 5.1 Surround</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-on-surface-variant">Audio Codec</span>
-                      <span className="text-on-surface font-semibold">E-AC-3 (Enhanced AC-3)</span>
+                      <span className="text-on-surface font-semibold">AAC / Enhanced AC-3</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-on-surface-variant">Range Protocol</span>
-                      <span className="text-on-surface font-semibold">RFC 7233 Byte Stream</span>
+                      <span className="text-on-surface-variant">Stream Protocol</span>
+                      <span className="text-on-surface font-semibold">HLS / Byte Stream</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-on-surface-variant">Origin ID</span>
-                      <span className="text-on-surface font-semibold truncate max-w-[160px]">
-                        {activeMedia.provider_media_id}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-on-surface-variant">Cluster Adapter</span>
-                      <span className="text-primary font-semibold uppercase">
-                        {activeMedia.provider_id === 'local-media' ? 'Local Storage' : 'Federated Stream Engine'}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-on-surface-variant">Direct Path</span>
-                      <span className="text-on-surface font-semibold truncate max-w-[160px]">
-                        /data/media/{activeMedia.title}
-                      </span>
+                      <span className="text-on-surface-variant">Resolution</span>
+                      <span className="text-primary font-semibold">Adaptive 1080p FHD</span>
                     </div>
                   </div>
                 </div>

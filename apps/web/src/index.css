@@ -3,15 +3,20 @@
 @tailwind utilities;
 
 @layer base {
-  * {
+  *, ::before, ::after {
     border-color: rgba(255, 255, 255, 0.08);
+    font-family: "Times New Roman", Times, serif;
   }
   
-  body {
+  html, body {
     background-color: #0e1416;
     color: #dee3e5;
     overflow-x: hidden;
-    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    font-family: "Times New Roman", Times, serif !important;
+  }
+
+  input, button, select, textarea, optgroup, option {
+    font-family: "Times New Roman", Times, serif !important;
   }
 
   /* Accessible focus indicators for keyboard navigation (Obsidian Cyan) */

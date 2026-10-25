@@ -3,7 +3,6 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AppShell } from './components/layout/AppShell';
 import { AuthProvider } from './context/AuthContext';
 import { AudioProvider } from './context/AudioContext';
-import { AuthModal } from './components/auth/AuthModal';
 
 // Dynamic lazy-loaded page routes for code splitting
 const HomePage = lazy(() => import('./pages/HomePage').then(m => ({ default: m.HomePage })));
@@ -29,7 +28,6 @@ export const App: React.FC = () => {
   return (
     <AuthProvider>
       <AudioProvider>
-        <AuthModal />
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<AppShell />}>

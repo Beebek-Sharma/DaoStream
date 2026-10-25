@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { NavLink } from 'react-router-dom';
 import {
   Home,
@@ -9,11 +9,9 @@ import {
   Bookmark,
   Settings,
   Layers,
-  HardDrive,
   Sparkles,
   Radio,
 } from 'lucide-react';
-import { fetchProviders } from '../../services/api';
 
 interface NavItem {
   name: string;
@@ -34,53 +32,25 @@ const navItems: NavItem[] = [
 ];
 
 export const Sidebar: React.FC = () => {
-  const [activeProviderCount, setActiveProviderCount] = useState<number>(3);
-  const [providerNames, setProviderNames] = useState<string>('TMDB, OL, Local');
-
-  useEffect(() => {
-    let mounted = true;
-    fetchProviders(false)
-      .then((providers) => {
-        if (!mounted || !providers || providers.length === 0) return;
-        const enabled = providers.filter((p) => p.is_enabled);
-        setActiveProviderCount(enabled.length);
-        const acronyms = enabled
-          .map((p) => {
-            if (p.id === 'tmdb') return 'TMDB';
-            if (p.id === 'openlibrary') return 'OL';
-            if (p.id === 'local-media') return 'Local NAS';
-            return p.name.slice(0, 4);
-          })
-          .join(', ');
-        setProviderNames(acronyms);
-      })
-      .catch(() => {
-        // Fallback to default active node state
-      });
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
   return (
     <>
       {/* Desktop Persistent Obsidian Sidebar */}
       <aside
-        className="hidden md:flex w-72 bg-surface-container-low border-r border-border-subtle flex-col justify-between shrink-0 h-screen sticky top-0 z-50 py-5 px-4 shadow-[0_1px_8px_rgba(0,0,0,0.04)]"
+        className="hidden md:flex w-64 bg-surface-container-low border-r border-border-subtle flex-col justify-between shrink-0 h-screen sticky top-0 z-50 py-6 px-4 shadow-[0_1px_8px_rgba(0,0,0,0.04)]"
         aria-label="Desktop Primary Navigation"
       >
         <div className="flex flex-col gap-6">
           {/* Brand Header */}
           <div className="flex items-center gap-3 px-2">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-primary to-primary-light flex items-center justify-center shadow-glow-primary">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-primary to-primary-light flex items-center justify-center shadow-glow-primary">
               <Layers className="w-5 h-5 text-on-primary" />
             </div>
             <div className="flex flex-col">
-              <span className="font-display font-bold text-base tracking-tight text-on-surface flex items-center gap-1.5">
+              <span className="font-display font-bold text-base tracking-tight text-on-surface">
                 DaoStream
               </span>
-              <span className="font-mono text-[10px] uppercase font-bold tracking-widest text-secondary">
-                Unified Media Hub
+              <span className="text-[11px] text-on-surface-variant font-medium">
+                Media Discovery Hub
               </span>
             </div>
           </div>
@@ -88,7 +58,7 @@ export const Sidebar: React.FC = () => {
           {/* Navigation Links */}
           <nav className="flex flex-col gap-1.5 overflow-y-auto" aria-label="Main Navigation">
             <div className="px-3 pb-1 text-[11px] font-bold tracking-wider uppercase text-on-surface-variant/70">
-              Discover
+              Menu
             </div>
             {navItems.map((item) => {
               const Icon = item.icon;
@@ -125,27 +95,11 @@ export const Sidebar: React.FC = () => {
           </nav>
         </div>
 
-        {/* Footer Area: Provider Telemetry Card */}
-        <div className="flex flex-col gap-3 pt-4 border-t border-border-subtle">
-          <div className="bg-surface-container px-3.5 py-2.5 rounded-lg flex flex-col gap-1 border border-border-subtle">
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-secondary animate-pulse" />
-              <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">
-                Cluster Pipeline
-              </span>
-            </div>
-            <p className="font-mono text-xs text-on-surface font-medium truncate">
-              {activeProviderCount} Online: {providerNames}
-            </p>
-          </div>
-
-          <div className="flex items-center justify-between px-1 text-xs text-on-surface-variant font-mono">
-            <span className="flex items-center gap-1.5">
-              <HardDrive className="w-3.5 h-3.5 text-primary" />
-              Local Storage
-            </span>
-            <span className="text-tertiary font-semibold">Active</span>
-          </div>
+        {/* Clean, calm footer */}
+        <div className="pt-4 border-t border-border-subtle px-2">
+          <p className="text-xs text-on-surface-variant/60 font-sans">
+            DaoStream &copy; 2026
+          </p>
         </div>
       </aside>
 
